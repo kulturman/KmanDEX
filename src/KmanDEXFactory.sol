@@ -21,7 +21,6 @@ contract KmanDEXFactory is FactoryInterface {
         return pairsMapping[tokenA][tokenB];
     }
 
-
     function createPool(address tokenA, address tokenB) external returns (address) {
         require(tokenA != address(0) && tokenB != address(0), InvalidAddress());
         require(tokenA != tokenB, IndenticalPoolAddresses(tokenA));

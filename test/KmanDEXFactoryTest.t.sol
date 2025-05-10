@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import "../lib/forge-std/src/Test.sol";
 import {KmanDEXFactory, FactoryInterface} from "../src/KmanDEXFactory.sol";
 
-
 contract KmanDEXFactoryTest is Test {
     KmanDEXFactory public kmanDEXFactory;
 
