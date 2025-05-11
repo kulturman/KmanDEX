@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import "../lib/forge-std/src/Test.sol";
+import "forge-std/console.sol";
 import {KmanDEXFactory, FactoryInterface} from "../src/KmanDEXFactory.sol";
 
 contract KmanDEXFactoryTest is Test {
@@ -26,14 +27,47 @@ contract KmanDEXFactoryTest is Test {
         kmanDEXFactory.createPool(address(1), address(1));
     }
 
+    function testCreatePoolFailsWithPoolAlreadyExists() public {
+        address tokenA = address(1);
+        address tokenB = address(2);
+
+        kmanDEXFactory.createPool(tokenA, tokenB);
+
+        vm.expectRevert(abi.encodeWithSelector(FactoryInterface.PoolAlreadyExists.selector, tokenA, tokenB));
+        kmanDEXFactory.createPool(tokenA, tokenB);
+    }
+
     function testCreatesPoolSucceeds() public {
         address tokenA = address(1);
         address tokenB = address(2);
 
-        vm.expectEmit(true, true, true, false);
-        emit FactoryInterface.PoolCreated(tokenA, tokenB, address(0));
-        address pairAddress = kmanDEXFactory.createPool(tokenA, tokenB);
+        address poolAddress = kmanDEXFactory.createPool(tokenA, tokenB);
 
-        assertNotEq(pairAddress, address(0));
+        // Check that the pool address is stored correctly, (A, B) and (B, A) should point to the same pool
+        assertEq(kmanDEXFactory.getPoolAddress(tokenA, tokenB), poolAddress);
+        assertEq(kmanDEXFactory.getPoolAddress(tokenB, tokenA), poolAddress);
+    }
+
+    function testCreatesPoolEmitsCorrectEvent() public {
+        address tokenA = address(1);
+        address tokenB = address(2);
+
+        vm.recordLogs();
+        address createdPool = kmanDEXFactory.createPool(tokenA, tokenB);
+
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        assertEq(entries.length, 1);
+
+        Vm.Log memory log = entries[0];
+        bytes32 expectedSig = keccak256("PoolCreated(address,address,address)");
+        assertEq(log.topics[0], expectedSig);
+
+        (address t0, address t1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+
+        assertEq(kmanDEXFactory.getPoolAddress(tokenA, tokenB), createdPool);
+        assertEq(kmanDEXFactory.getPoolAddress(tokenB, tokenA), createdPool);
+        assertEq(address(uint160(uint256(log.topics[1]))), t0);
+        assertEq(address(uint160(uint256(log.topics[2]))), t1);
+        assertEq(address(uint160(uint256(log.topics[3]))), createdPool);
     }
 }

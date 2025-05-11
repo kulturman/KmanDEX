@@ -6,19 +6,21 @@ import {KmanDEXPool} from "./KmanDEXPool.sol";
 interface FactoryInterface {
     error InvalidAddress();
     error IndenticalPoolAddresses(address);
-    error PoolAlreadyExists();
+    error PoolAlreadyExists(address, address);
 
-    event PoolCreated(address indexed tokenA, address indexed tokenB, address pairAddress);
+    event PoolCreated(address indexed tokenA, address indexed tokenB, address indexed pairAddress);
 
     function getPoolAddress(address tokenA, address tokenB) external view returns (address);
     function createPool(address tokenA, address tokenB) external returns (address);
 }
 
 contract KmanDEXFactory is FactoryInterface {
-    mapping(address => mapping(address => address)) public pairsMapping;
+    mapping(address => mapping(address => address)) private pools;
 
     function getPoolAddress(address tokenA, address tokenB) external view returns (address) {
-        return pairsMapping[tokenA][tokenB];
+        (address minAddress, address maxAddress) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+
+        return pools[minAddress][maxAddress];
     }
 
     function createPool(address tokenA, address tokenB) external returns (address) {
@@ -28,7 +30,17 @@ contract KmanDEXFactory is FactoryInterface {
         KmanDEXPool newPool = new KmanDEXPool(tokenA, tokenB);
         //I may need to initialize newPool here, don't now yet
 
-        emit PoolCreated(tokenA, tokenB, address(newPool));
+        // We use less memory
+        //pools[tokenA][tokenB] = address(newPool);
+        //pools[tokenB][tokenA] = address(newPool);
+        (address minAddress, address maxAddress) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+
+        if (pools[minAddress][maxAddress] != address(0)) {
+            revert PoolAlreadyExists(tokenA, tokenB);
+        }
+
+        pools[minAddress][maxAddress] = address(newPool);
+        emit PoolCreated(minAddress, maxAddress, address(newPool));
 
         return address(newPool);
     }
