@@ -27,7 +27,7 @@ contract KmanDEXFactory is FactoryInterface {
         require(tokenA != address(0) && tokenB != address(0), InvalidAddress());
         require(tokenA != tokenB, IndenticalPoolAddresses(tokenA));
 
-        KmanDEXPool newPool = new KmanDEXPool(tokenA, tokenB, address (this));
+        KmanDEXPool newPool = new KmanDEXPool(tokenA, tokenB, address(this));
         //I may need to initialize newPool here, don't now yet
 
         // We use less memory
