@@ -9,6 +9,12 @@ interface KmanDEXPoolInterface {
     error InvalidAddress();
     error InvalidAmount();
     error NotEnoughShares(uint256 actualShares, uint256 sharesToBurn);
+
+    event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
+    event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
+
+    function investLiquidity(uint256 amountTokenA, uint256 amountTokenB) external;
+    function withdrawLiquidity(uint256 sharesToBurn) external;
 }
 
 contract KmanDEXPool is KmanDEXPoolInterface {
@@ -32,7 +38,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     }
 
     function investLiquidity(uint256 amountTokenA, uint256 amountTokenB) external {
-        require(amountTokenA > 0 && amountTokenB > 0, "Invalid amounts");
+        require(amountTokenA > 0 && amountTokenB > 0, InvalidAmount());
         require(msg.sender != address(0), InvalidAddress());
 
         if (totalShares == 0) {
@@ -54,6 +60,8 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         invariant = tokenAAmount * tokenBAmount;
         require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA));
         require(IERC20(tokenB).transferFrom(msg.sender, address(this), amountTokenB));
+
+        emit LiquidityAdded(msg.sender, amountTokenA, amountTokenB);
     }
 
     function withdrawLiquidity(uint256 sharesToBurn) external {
@@ -72,5 +80,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         require(IERC20(tokenA).transfer(msg.sender, amountTokenA));
         require(IERC20(tokenB).transfer(msg.sender, amountTokenB));
+
+        emit LiquidityRemoved(msg.sender, sharesToBurn, amountTokenA, amountTokenB);
     }
 }

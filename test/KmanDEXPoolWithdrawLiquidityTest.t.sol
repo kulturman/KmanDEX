@@ -30,6 +30,8 @@ contract KmanDEXPoolWithdrawLiquidityTest is Test {
         //We invest liquidity first and gets 1000 shares, the we withdraw 500 shares which is half of the shares
         kmanDEXPool.investLiquidity(10000, 5000);
 
+        vm.expectEmit();
+        emit KmanDEXPoolInterface.LiquidityRemoved(contractAddress, 500, 5000, 2500);
         kmanDEXPool.withdrawLiquidity(500);
 
         assertEq(kmanDEXPool.shares(contractAddress), 500, "Shares should be 500");

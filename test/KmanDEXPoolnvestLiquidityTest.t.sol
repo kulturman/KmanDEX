@@ -22,6 +22,8 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     }
 
     function testInvestLiquidityWithEmptyPool() public {
+        vm.expectEmit();
+        emit KmanDEXPoolInterface.LiquidityAdded(contractAddress, 10000, 5000);
         kmanDEXPool.investLiquidity(10000, 5000);
 
         assertEq(kmanDEXPool.totalShares(), kmanDEXPool.INITIAL_SHARES(), "Total shares should be 1000");
