@@ -24,8 +24,8 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     function testInvestLiquidityWithEmptyPool() public {
         kmanDEXPool.investLiquidity(10000, 5000);
 
-        assertEq(kmanDEXPool.totalShares(), kmanDEXPool.TOTAL_SHARES(), "Total shares should be 1000");
-        assertEq(kmanDEXPool.shares(contractAddress), kmanDEXPool.TOTAL_SHARES(), "Sender shares should be 1000");
+        assertEq(kmanDEXPool.totalShares(), kmanDEXPool.INITIAL_SHARES(), "Total shares should be 1000");
+        assertEq(kmanDEXPool.shares(contractAddress), kmanDEXPool.INITIAL_SHARES(), "Sender shares should be 1000");
 
         assertEq(kmanDEXPool.tokenAAmount(), 10000);
         assertEq(kmanDEXPool.tokenBAmount(), 5000);
@@ -60,5 +60,19 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
 
         assertEq(kmanDEXPool.tokenAAmount(), 30_000, "TokenA amount should be 30000");
         assertEq(kmanDEXPool.tokenBAmount(), 15_000, "TokenB amount should be 15000");
+    }
+
+    function testInvestLiquidityCumulatesForSameInvestor() public {
+        kmanDEXPool.investLiquidity(20_000, 10_000);
+        kmanDEXPool.investLiquidity(30_000, 15_000);
+
+        assertEq(kmanDEXPool.shares(contractAddress), 2_500, "First investor should have all shares (1000 + 1500)");
+        assertEq(kmanDEXPool.totalShares(), 2_500, "Total shares should be 2500");
+
+        assertEq(tokenA.balanceOf(address(kmanDEXPool)), 50_000, "Contract should have 50000 TokenA");
+        assertEq(tokenB.balanceOf(address(kmanDEXPool)), 25_000, "Contract should have 25000 TokenB");
+
+        assertEq(kmanDEXPool.tokenAAmount(), 50_000, "TokenA amount should be 50000");
+        assertEq(kmanDEXPool.tokenBAmount(), 25_000, "TokenB amount should be 25000");
     }
 }

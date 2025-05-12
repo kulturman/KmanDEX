@@ -7,6 +7,8 @@ import {Math} from "../lib/openzeppelin-contracts/contracts/utils/math/Math.sol"
 
 interface KmanDEXPoolInterface {
     error InvalidAddress();
+    error InvalidAmount();
+    error NotEnoughShares(uint256 actualShares, uint256 sharesToBurn);
 }
 
 contract KmanDEXPool is KmanDEXPoolInterface {
@@ -18,7 +20,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     mapping(address => uint256) public shares;
     uint256 public invariant;
 
-    uint256 public constant TOTAL_SHARES = 1000;
+    uint256 public constant INITIAL_SHARES = 1000;
 
     uint256 public tokenAAmount;
     uint256 public tokenBAmount;
@@ -35,13 +37,13 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         if (totalShares == 0) {
             //First investor
-            totalShares = TOTAL_SHARES;
-            shares[msg.sender] = TOTAL_SHARES;
+            totalShares = INITIAL_SHARES;
+            shares[msg.sender] = INITIAL_SHARES;
         } else {
             //Subsequent investors
             uint256 sharesToMint =
                 Math.min(amountTokenA * totalShares / tokenAAmount, amountTokenB * totalShares / tokenBAmount);
-            shares[msg.sender] = sharesToMint;
+            shares[msg.sender] += sharesToMint;
             totalShares += sharesToMint;
         }
 
@@ -52,5 +54,23 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         invariant = tokenAAmount * tokenBAmount;
         require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA));
         require(IERC20(tokenB).transferFrom(msg.sender, address(this), amountTokenB));
+    }
+
+    function withdrawLiquidity(uint256 sharesToBurn) external {
+        require(shares[msg.sender] >= sharesToBurn, NotEnoughShares(shares[msg.sender], sharesToBurn));
+        shares[msg.sender] -= sharesToBurn;
+
+        uint256 amountTokenA = (sharesToBurn * tokenAAmount) / totalShares;
+        uint256 amountTokenB = (sharesToBurn * tokenBAmount) / totalShares;
+
+        totalShares -= sharesToBurn;
+
+        tokenAAmount -= amountTokenA;
+        tokenBAmount -= amountTokenB;
+
+        invariant = tokenAAmount * tokenBAmount;
+
+        require(IERC20(tokenA).transfer(msg.sender, amountTokenA));
+        require(IERC20(tokenB).transfer(msg.sender, amountTokenB));
     }
 }
