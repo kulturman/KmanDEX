@@ -9,11 +9,13 @@ interface KmanDEXPoolInterface {
     error InvalidAddress();
     error InvalidAmount();
     error NotEnoughShares(uint256 actualShares, uint256 sharesToBurn);
+    error MinimumSharesNotMet(uint256 minimumShares, uint256 sharesToMint);
+
 
     event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
     event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
 
-    function investLiquidity(uint256 amountTokenA, uint256 amountTokenB) external;
+    function investLiquidity(uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares) external;
     function withdrawLiquidity(uint256 sharesToBurn) external;
 }
 
@@ -37,7 +39,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         tokenB = tokenB_;
     }
 
-    function investLiquidity(uint256 amountTokenA, uint256 amountTokenB) external {
+    function investLiquidity(uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares) external {
         require(amountTokenA > 0 && amountTokenB > 0, InvalidAmount());
         require(msg.sender != address(0), InvalidAddress());
 
@@ -45,10 +47,15 @@ contract KmanDEXPool is KmanDEXPoolInterface {
             //First investor
             totalShares = INITIAL_SHARES;
             shares[msg.sender] = INITIAL_SHARES;
+
+            require(minimumShares <= INITIAL_SHARES, MinimumSharesNotMet(minimumShares, INITIAL_SHARES));
         } else {
             //Subsequent investors
             uint256 sharesToMint =
                 Math.min(amountTokenA * totalShares / tokenAAmount, amountTokenB * totalShares / tokenBAmount);
+
+            require(minimumShares <= sharesToMint, MinimumSharesNotMet(minimumShares, sharesToMint));
+
             shares[msg.sender] += sharesToMint;
             totalShares += sharesToMint;
         }

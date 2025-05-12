@@ -28,7 +28,7 @@ contract KmanDEXPoolWithdrawLiquidityTest is Test {
 
     function testWithdrawSomeLiquidity() public {
         //We invest liquidity first and gets 1000 shares, the we withdraw 500 shares which is half of the shares
-        kmanDEXPool.investLiquidity(10000, 5000);
+        kmanDEXPool.investLiquidity(10000, 5000, 1);
 
         vm.expectEmit();
         emit KmanDEXPoolInterface.LiquidityRemoved(contractAddress, 500, 5000, 2500);
@@ -47,7 +47,7 @@ contract KmanDEXPoolWithdrawLiquidityTest is Test {
     }
 
     function testWithdrawAllLiquidity() public {
-        kmanDEXPool.investLiquidity(10000, 5000);
+        kmanDEXPool.investLiquidity(10000, 5000, 1);
 
         kmanDEXPool.withdrawLiquidity(1000);
 
