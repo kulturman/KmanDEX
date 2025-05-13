@@ -22,13 +22,24 @@ contract KmanDEXSwapTest is Test {
         contractAddress = address(this);
     }
 
+    function testRevertsSwapWhenMinimumAmountNotMet() public {
+        // Swap 1000 TokenA for TokenB
+        kmanDEXPool.investLiquidity(10_000, 5_000, 1);
+        uint256 amountIn = 1_000;
+        uint256 senderTokenABalanceBeforeSwap = tokenA.balanceOf(contractAddress);
+        uint256 senderTokenBBalanceBeforeSwap = tokenB.balanceOf(contractAddress);
+
+        vm.expectRevert(abi.encodeWithSelector(KmanDEXPoolInterface.MinimumAmountNotMet.selector, 1000, 454));
+        kmanDEXPool.swap(address(tokenA), amountIn, 1000);
+    }
+
     function testSwapTokenAToTokenB() public {
         // Swap 1000 TokenA for TokenB
         kmanDEXPool.investLiquidity(10_000, 5_000, 1);
         uint256 amountIn = 1_000;
         uint256 senderTokenABalanceBeforeSwap = tokenA.balanceOf(contractAddress);
         uint256 senderTokenBBalanceBeforeSwap = tokenB.balanceOf(contractAddress);
-        uint256 amountOut = kmanDEXPool.swap(address(tokenA), amountIn, 500);
+        uint256 amountOut = kmanDEXPool.swap(address(tokenA), amountIn, 100);
 
         //We apply .2% fee, so we should get 1000 - 2 = 998, but we have 10_000 TokenA and 5_000 TokenB,
         assertEq(amountOut, 454, "Amount out should be 453");
