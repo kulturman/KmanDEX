@@ -67,6 +67,7 @@ contract KmanDEXSwapTest is Test {
     }
 
     function testSwapTokenBToTokenA() public {
+        console.log(vm.rpcUrl('main_net'));
         // Swap 1000 TokenB for TokenA, we should get 454 TokenA just like in the previous test
         kmanDEXPool.investLiquidity(5_000, 10_000, 1);
         uint256 amountIn = 1_000;

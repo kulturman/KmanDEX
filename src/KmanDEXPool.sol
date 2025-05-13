@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import "../lib/forge-std/src/console.sol";
 import {IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Math} from "../lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {SafeMath} from "./SafeMath.sol";
 
 interface KmanDEXPoolInterface {
     error InvalidAddress();
@@ -22,6 +23,7 @@ interface KmanDEXPoolInterface {
 }
 
 contract KmanDEXPool is KmanDEXPoolInterface {
+    using SafeMath for uint256;
     address private factory;
     address public tokenA;
     address public tokenB;
@@ -59,15 +61,15 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
             require(minimumShares <= sharesToMint, MinimumSharesNotMet(minimumShares, sharesToMint));
 
-            shares[msg.sender] += sharesToMint;
-            totalShares += sharesToMint;
+            shares[msg.sender] = sharesToMint.add(shares[msg.sender]);
+            totalShares = sharesToMint.add(totalShares);
         }
 
-        tokenAAmount += amountTokenA;
-        tokenBAmount += amountTokenB;
+        tokenAAmount = tokenAAmount.add(amountTokenA);
+        tokenBAmount = tokenBAmount.add(amountTokenB);
 
         //Use safe math library for multiplication to prevent overflow later
-        invariant = tokenAAmount * tokenBAmount;
+        invariant = tokenAAmount.mul(tokenBAmount);
         require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA));
         require(IERC20(tokenB).transferFrom(msg.sender, address(this), amountTokenB));
 
@@ -76,17 +78,17 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
     function withdrawLiquidity(uint256 sharesToBurn) external {
         require(shares[msg.sender] >= sharesToBurn, NotEnoughShares(shares[msg.sender], sharesToBurn));
-        shares[msg.sender] -= sharesToBurn;
+        shares[msg.sender] = shares[msg.sender].sub(sharesToBurn);
 
-        uint256 amountTokenA = (sharesToBurn * tokenAAmount) / totalShares;
-        uint256 amountTokenB = (sharesToBurn * tokenBAmount) / totalShares;
+        uint256 amountTokenA = sharesToBurn.mul(tokenAAmount).div(totalShares);
+        uint256 amountTokenB = sharesToBurn.mul(tokenBAmount).div(totalShares);
 
-        totalShares -= sharesToBurn;
+        totalShares = totalShares.sub(sharesToBurn);
 
-        tokenAAmount -= amountTokenA;
-        tokenBAmount -= amountTokenB;
+        tokenAAmount = tokenAAmount.sub(amountTokenA);
+        tokenBAmount = tokenBAmount.sub(amountTokenB);
 
-        invariant = tokenAAmount * tokenBAmount;
+        invariant = tokenAAmount.mul(tokenBAmount);
 
         require(IERC20(tokenA).transfer(msg.sender, amountTokenA));
         require(IERC20(tokenB).transfer(msg.sender, amountTokenB));
@@ -99,6 +101,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         require(amountIn > 0, InvalidAmount());
         require(minTokenOut > 0, InvalidAmount());
 
+        //Refactor later to avoid code duplication
         if (tokenIn == tokenA) {
             return swapTokenAtoTokenB(amountIn, minTokenOut);
         } else {
