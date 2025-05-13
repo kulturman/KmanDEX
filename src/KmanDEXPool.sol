@@ -129,13 +129,24 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     }
 
     function swapTokenBtoTokenA(uint256 amountIn, uint256 minTokenOut) internal returns (uint256) {
-        require(tokenB == msg.sender, InvalidAddress());
-
         uint256 fees = amountIn / FEE_RATE;
         uint256 amountInWithFees = amountIn - fees;
 
-        uint256 amountOut = 0;
+        uint256 tempAmountTokenA = tokenBAmount + amountInWithFees;
+        uint256 newAmountTokenA = invariant / tempAmountTokenA;
+        uint256 amountOut = tokenAAmount - newAmountTokenA;
 
+        require(amountOut >= minTokenOut && amountOut <= tokenAAmount, MinimumAmountNotMet(minTokenOut, amountOut));
+
+        tokenBAmount += amountIn;
+        tokenAAmount = newAmountTokenA;
+
+        invariant = tokenAAmount * tokenBAmount;
+
+        require(IERC20(tokenB).transferFrom(msg.sender, address(this), amountIn));
+        require(IERC20(tokenA).transfer(msg.sender, amountOut));
+
+        emit Swapped(msg.sender, tokenB, amountIn, amountOut);
         return amountOut;
     }
 }
