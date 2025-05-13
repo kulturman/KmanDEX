@@ -14,6 +14,7 @@ interface KmanDEXPoolInterface {
 
     event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
     event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
+    event Swapped(address indexed sender, address tokenIn, uint256 amountIn, uint256 amountOut);
 
     function investLiquidity(uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares) external;
     function withdrawLiquidity(uint256 sharesToBurn) external;
@@ -123,6 +124,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountIn));
         require(IERC20(tokenB).transfer(msg.sender, amountOut));
 
+        emit Swapped(msg.sender, tokenA, amountIn, amountOut);
         return amountOut;
     }
 
