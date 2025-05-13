@@ -11,12 +11,12 @@ interface KmanDEXPoolInterface {
     error NotEnoughShares(uint256 actualShares, uint256 sharesToBurn);
     error MinimumSharesNotMet(uint256 minimumShares, uint256 sharesToMint);
 
-
     event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
     event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
 
     function investLiquidity(uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares) external;
     function withdrawLiquidity(uint256 sharesToBurn) external;
+    function swap(address tokenIn, uint256 amountIn, uint256 minTokenOut) external returns (uint256 amountOut);
 }
 
 contract KmanDEXPool is KmanDEXPoolInterface {
@@ -29,6 +29,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     uint256 public invariant;
 
     uint256 public constant INITIAL_SHARES = 1000;
+    uint256 public constant FEE_RATE = 500;
 
     uint256 public tokenAAmount;
     uint256 public tokenBAmount;
@@ -89,5 +90,47 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         require(IERC20(tokenB).transfer(msg.sender, amountTokenB));
 
         emit LiquidityRemoved(msg.sender, sharesToBurn, amountTokenA, amountTokenB);
+    }
+
+    function swap(address tokenIn, uint256 amountIn, uint256 minTokenOut) external returns (uint256) {
+        require(tokenIn == tokenA || tokenIn == tokenB, InvalidAddress());
+        require(amountIn > 0, InvalidAmount());
+
+        if (tokenIn == tokenA) {
+            return swapTokenAtoTokenB(amountIn, minTokenOut);
+        } else {
+            return swapTokenBtoTokenA(amountIn, minTokenOut);
+        }
+    }
+
+    function swapTokenAtoTokenB(uint256 amountIn, uint256 minTokenOut) internal returns (uint256) {
+        uint256 fees = amountIn / FEE_RATE;
+        uint256 amountInWithFees = amountIn - fees;
+
+        uint256 tempAmountTokenB = tokenAAmount + amountInWithFees;
+        uint256 newAmountTokenB = invariant / tempAmountTokenB;
+
+        uint256 amountOut = tokenBAmount - newAmountTokenB;
+
+        tokenAAmount += amountIn;
+        tokenBAmount = newAmountTokenB;
+
+        invariant = tokenAAmount * tokenBAmount;
+
+        require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountIn));
+        require(IERC20(tokenB).transfer(msg.sender, amountOut));
+
+        return amountOut;
+    }
+
+    function swapTokenBtoTokenA(uint256 amountIn, uint256 minTokenOut) internal returns (uint256) {
+        require(tokenB == msg.sender, InvalidAddress());
+
+        uint256 fees = amountIn / FEE_RATE;
+        uint256 amountInWithFees = amountIn - fees;
+
+        uint256 amountOut = 0;
+
+        return amountOut;
     }
 }
