@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {KmanDEXPool} from "./KmanDEXPool.sol";
+import {KmanDEXPool, KmanDEXPoolInterface} from "./KmanDEXPool.sol";
 
 interface FactoryInterface {
     error InvalidAddress();
@@ -32,7 +32,7 @@ contract KmanDEXFactory is FactoryInterface {
         require(tokenA != address(0) && tokenB != address(0), InvalidAddress());
         require(tokenA != tokenB, IndenticalPoolAddresses(tokenA));
 
-        KmanDEXPool newPool = new KmanDEXPool(contractOwner, tokenA, tokenB, address(this));
+        KmanDEXPool newPool = new KmanDEXPool(contractOwner, address(this), tokenA, tokenB);
         //I may need to initialize newPool here, don't now yet
 
         // We use less memory
