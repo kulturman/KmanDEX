@@ -5,6 +5,7 @@ import "../lib/forge-std/src/console.sol";
 import {IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Math} from "../lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {SafeMath} from "./SafeMath.sol";
+import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 
 interface KmanDEXPoolInterface {
     error InvalidAddress();
@@ -24,9 +25,13 @@ interface KmanDEXPoolInterface {
 
 contract KmanDEXPool is KmanDEXPoolInterface {
     using SafeMath for uint256;
+
+    address public contactOwner;
+
     address private factory;
     address public tokenA;
     address public tokenB;
+    address public constant UNISWAP_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     uint256 public totalShares;
     mapping(address => uint256) public shares;
@@ -34,11 +39,13 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
     uint256 public constant INITIAL_SHARES = 1000;
     uint256 public constant FEE_RATE = 500;
+    uint256 public constant UNISWAP_ROUTING_FEE = 1000;
 
     uint256 public tokenAAmount;
     uint256 public tokenBAmount;
 
-    constructor(address factory_, address tokenA_, address tokenB_) {
+    constructor(address contractOwner_, address factory_, address tokenA_, address tokenB_) {
+        contactOwner = contractOwner_;
         factory = factory_;
         tokenA = tokenA_;
         tokenB = tokenB_;
@@ -101,6 +108,12 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         require(amountIn > 0, InvalidAmount());
         require(minTokenOut > 0, InvalidAmount());
 
+        address tokenOut = tokenIn == tokenA ? tokenB : tokenA;
+
+        if (tokenAAmount == 0 || tokenBAmount == 0) {
+            return swapWithUniswap(tokenIn, tokenOut, amountIn, minTokenOut);
+        }
+
         //Refactor later to avoid code duplication
         if (tokenIn == tokenA) {
             return swapTokenAtoTokenB(amountIn, minTokenOut);
@@ -151,5 +164,29 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         emit Swapped(msg.sender, tokenB, amountIn, amountOut);
         return amountOut;
+    }
+
+    function swapWithUniswap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minTokenOut)
+        internal
+        returns (uint256)
+    {
+        address[] memory paths = new address[](2);
+        paths[0] = tokenIn;
+        paths[1] = tokenOut;
+
+        uint256 fees = amountIn.div(UNISWAP_ROUTING_FEE);
+        uint256 amountInWithFees = amountIn.sub(fees);
+
+        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountInWithFees);
+        IERC20(tokenIn).approve(address(UNISWAP_ROUTER), amountInWithFees);
+
+        //The fees goes to the contract owner (ME!!), indeed I did not use LP
+        IERC20(tokenIn).transferFrom(msg.sender, contactOwner, fees);
+
+        uint256[] memory amounts = IUniswapV2Router(UNISWAP_ROUTER).swapExactTokensForTokens(
+            amountInWithFees, minTokenOut, paths, address(this), block.timestamp
+        );
+
+        return amounts[1];
     }
 }

@@ -3,19 +3,19 @@ pragma solidity ^0.8.10;
 
 import {Test} from "../lib/forge-std/src/Test.sol";
 import "../src/KmanDEXPool.sol";
-import {Test} from "../lib/forge-std/src/Test.sol";
 import "./ERC20Mock.sol";
 
 contract KmanDEXSwapTest is Test {
     KmanDEXPool public kmanDEXPool;
     ERC20Mock public tokenA;
     ERC20Mock public tokenB;
-    address contractAddress;
+    address public contractAddress;
+    address public contractOwner = address(2);
 
     function setUp() public {
         tokenA = new ERC20Mock("TokenA", "TKA");
         tokenB = new ERC20Mock("TokenB", "TKB");
-        kmanDEXPool = new KmanDEXPool(address(this), address(tokenA), address(tokenB));
+        kmanDEXPool = new KmanDEXPool(contractOwner, address(this), address(tokenA), address(tokenB));
 
         tokenA.approve(address(kmanDEXPool), type(uint256).max);
         tokenB.approve(address(kmanDEXPool), type(uint256).max);
@@ -67,7 +67,6 @@ contract KmanDEXSwapTest is Test {
     }
 
     function testSwapTokenBToTokenA() public {
-        console.log(vm.rpcUrl('main_net'));
         // Swap 1000 TokenB for TokenA, we should get 454 TokenA just like in the previous test
         kmanDEXPool.investLiquidity(5_000, 10_000, 1);
         uint256 amountIn = 1_000;
