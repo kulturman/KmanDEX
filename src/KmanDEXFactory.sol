@@ -16,10 +16,12 @@ interface FactoryInterface {
 
 contract KmanDEXFactory is FactoryInterface {
     address public contractOwner;
+    address public router;
     mapping(address => mapping(address => address)) private pools;
 
     constructor() {
         contractOwner = msg.sender;
+        router = msg.sender;
     }
 
     function getPoolAddress(address tokenA, address tokenB) external view returns (address) {

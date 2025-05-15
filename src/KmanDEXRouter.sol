@@ -15,8 +15,8 @@ contract KmanDEXRouter {
 
     event SwapForwarded(address indexed user, address tokenIn, address tokenOut, uint256 amountIn, uint256 feeTaken);
 
-    constructor(address _factory, address _uniRouter, address _collector) {
-        factory = _factory;
+    constructor(address _uniRouter, address _collector) {
+        factory = address(new KmanDEXFactory());
         uniswapRouter = _uniRouter;
         feeCollector = _collector;
     }

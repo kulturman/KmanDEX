@@ -11,10 +11,12 @@ contract KmanDEXRouterTest is Test {
     address public feeCollector;
     address public USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
     address public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH
+    KmanDEXRouter public router;
 
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("main_net"), 22476889);
-        factory = new KmanDEXFactory();
+        router = new KmanDEXRouter(uniswapRouter, feeCollector);
+        factory = KmanDEXFactory(router.factory());
         deal(USDC, address(this), 20_000);
         deal(WETH, address(this), 10_000);
         uniswapRouter = address(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
@@ -28,7 +30,6 @@ contract KmanDEXRouterTest is Test {
         IERC20(WETH).approve(pool, type(uint256).max);
 
         KmanDEXPoolInterface(pool).investLiquidity(10_000, 5_000, 1);
-        KmanDEXRouter router = new KmanDEXRouter(address(factory), uniswapRouter, feeCollector);
         IERC20(USDC).approve(address(router), 1_000);
 
         vm.expectCall(pool, abi.encodeWithSelector(KmanDEXPoolInterface.swap.selector, USDC, 1_000, 1));
@@ -67,7 +68,6 @@ contract KmanDEXRouterTest is Test {
     }
 
     function testSwapWithNonExistentPool() public {
-        KmanDEXRouter router = new KmanDEXRouter(address(factory), uniswapRouter, feeCollector);
         IERC20(USDC).approve(address(router), 1_000);
 
         uint256 amountOut = router.swap(address(USDC), address(WETH), 1_000, 1);
