@@ -28,19 +28,19 @@ contract KmanDEXRouter {
         uint256 amountTokenB,
         uint256 minimumShares
     ) external {
-        address pool = KmanDEXFactory(factory).getPoolAddress(tokenA, tokenB);
+        address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
         require(pool != address(0), "Pool does not exist");
         KmanDEXPoolInterface(pool).investLiquidity(amountTokenA, amountTokenB, minimumShares);
     }
 
     function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external {
-        address pool = KmanDEXFactory(factory).getPoolAddress(tokenA, tokenB);
+        address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
         require(pool != address(0), "Pool does not exist");
         KmanDEXPoolInterface(pool).withdrawLiquidity(sharesToBurn);
     }
 
     function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external returns (uint256) {
-        address pool = KmanDEXFactory(factory).getPoolAddress(tokenIn, tokenOut);
+        address pool = FactoryInterface(factory).getPoolAddress(tokenIn, tokenOut);
 
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
 
