@@ -14,7 +14,7 @@ contract KmanDEXPoolWithdrawLiquidityTest is Test {
     function setUp() public {
         tokenA = new ERC20Mock("TokenA", "TKA");
         tokenB = new ERC20Mock("TokenB", "TKB");
-        kmanDEXPool = new KmanDEXPool(address(2), address(this), address(tokenA), address(tokenB));
+        kmanDEXPool = new KmanDEXPool(address(2), address(this), address(this), address(tokenA), address(tokenB));
 
         tokenA.approve(address(kmanDEXPool), type(uint256).max);
         tokenB.approve(address(kmanDEXPool), type(uint256).max);

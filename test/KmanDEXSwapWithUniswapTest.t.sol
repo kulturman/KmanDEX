@@ -20,7 +20,7 @@ contract KmanDEXSwapWithUniswapTest is Test {
         uint256 mainNet = vm.createFork(rpcUrl, 22476889);
         vm.selectFork(mainNet);
 
-        kmanDEXPool = new KmanDEXPool(contractOwner, address(this), USDC, WETH);
+        kmanDEXPool = new KmanDEXPool(contractOwner, address(this), address(this), USDC, WETH);
         deal(USDC, address(this), 10000);
         IERC20(USDC).approve(address(kmanDEXPool), type(uint256).max);
     }

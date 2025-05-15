@@ -17,13 +17,15 @@ contract KmanDEXRouterTest is Test {
         vm.createSelectFork(vm.rpcUrl("main_net"), 22476889);
         router = new KmanDEXRouter(uniswapRouter, feeCollector);
         factory = KmanDEXFactory(router.factory());
-        deal(USDC, address(this), 20_000);
-        deal(WETH, address(this), 10_000);
+        deal(USDC, address(router), 20_000);
+        deal(WETH, address(router), 10_000);
         uniswapRouter = address(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
         feeCollector = address(0x300);
     }
 
     function testSwapWithExistingPool() public {
+        //We need to prank as the router as we create the contract from it
+        vm.startPrank(address(router));
         address pool = factory.createPool(USDC, WETH);
         //Authorize investment in pool
         IERC20(USDC).approve(pool, type(uint256).max);
@@ -43,6 +45,7 @@ contract KmanDEXRouterTest is Test {
     }
 
     function testInvestLiquidity() public {
+        vm.startPrank(address(router));
         address pool = factory.createPool(USDC, WETH);
         //Authorize investment in pool
         IERC20(USDC).approve(pool, type(uint256).max);
@@ -56,6 +59,7 @@ contract KmanDEXRouterTest is Test {
     }
 
     function testWithdrawLiquidity() public {
+        vm.startPrank(address(router));
         address pool = factory.createPool(USDC, WETH);
         //Authorize investment in pool
         IERC20(USDC).approve(pool, type(uint256).max);
@@ -68,6 +72,7 @@ contract KmanDEXRouterTest is Test {
     }
 
     function testSwapWithNonExistentPool() public {
+        vm.startPrank(address(router));
         IERC20(USDC).approve(address(router), 1_000);
 
         uint256 amountOut = router.swap(address(USDC), address(WETH), 1_000, 1);

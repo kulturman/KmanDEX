@@ -4,18 +4,21 @@ pragma solidity ^0.8.10;
 import "../src/KmanDEXPool.sol";
 import "./ERC20Mock.sol";
 import {Test} from "../lib/forge-std/src/Test.sol";
+import {KmanDEXRouter} from "../src/KmanDEXRouter.sol";
 
 contract KmanDEXPoolInvestLiquidityTest is Test {
     KmanDEXPool public kmanDEXPool;
     ERC20Mock public tokenA;
     ERC20Mock public tokenB;
-    address contractAddress;
-    address contractOwner = address(2);
+    address public contractAddress;
+    address public contractOwner = address(2);
+    KmanDEXRouter public kmanDEXRouter;
 
     function setUp() public {
         tokenA = new ERC20Mock("TokenA", "TKA");
         tokenB = new ERC20Mock("TokenB", "TKB");
-        kmanDEXPool = new KmanDEXPool(contractOwner, address(this), address(tokenA), address(tokenB));
+        kmanDEXRouter = new KmanDEXRouter(address(0), address(0));
+        kmanDEXPool = new KmanDEXPool(contractOwner, address(this), address(this), address(tokenA), address(tokenB));
 
         tokenA.approve(address(kmanDEXPool), type(uint256).max);
         tokenB.approve(address(kmanDEXPool), type(uint256).max);
@@ -58,6 +61,7 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
 
         kmanDEXPool.investLiquidity(20_000, 10_000, 1);
 
+        kmanDEXPool.changeRouterAddress(secondInvestor);
         vm.startPrank(secondInvestor);
         tokenA.approve(address(kmanDEXPool), type(uint256).max);
         tokenB.approve(address(kmanDEXPool), type(uint256).max);

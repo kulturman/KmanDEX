@@ -13,6 +13,7 @@ interface KmanDEXPoolInterface {
     error NotEnoughShares(uint256 actualShares, uint256 sharesToBurn);
     error MinimumSharesNotMet(uint256 minimumShares, uint256 sharesToMint);
     error MinimumAmountNotMet(uint256 minTokenOut, uint256 amountOut);
+    error CallFromAnotherAddressThanRouter(address sender);
 
     event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
     event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
@@ -29,6 +30,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     address public contactOwner;
 
     address private factory;
+    address private router;
     address public tokenA;
     address public tokenB;
     address public constant UNISWAP_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
@@ -44,14 +46,24 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     uint256 public tokenAAmount;
     uint256 public tokenBAmount;
 
-    constructor(address contractOwner_, address factory_, address tokenA_, address tokenB_) {
+    constructor(address contractOwner_, address factory_, address router_, address tokenA_, address tokenB_) {
         contactOwner = contractOwner_;
         factory = factory_;
+        router = router_;
         tokenA = tokenA_;
         tokenB = tokenB_;
     }
 
-    function investLiquidity(uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares) external {
+    modifier onlyRouter() {
+        require(msg.sender == router, CallFromAnotherAddressThanRouter(msg.sender));
+        _;
+    }
+
+    function changeRouterAddress(address newRouter) external onlyRouter {
+        router = newRouter;
+    }
+
+    function investLiquidity(uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares) external onlyRouter {
         require(amountTokenA > 0 && amountTokenB > 0, InvalidAmount());
         require(msg.sender != address(0), InvalidAddress());
 
@@ -83,7 +95,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         emit LiquidityAdded(msg.sender, amountTokenA, amountTokenB);
     }
 
-    function withdrawLiquidity(uint256 sharesToBurn) external {
+    function withdrawLiquidity(uint256 sharesToBurn) external onlyRouter {
         require(shares[msg.sender] >= sharesToBurn, NotEnoughShares(shares[msg.sender], sharesToBurn));
         shares[msg.sender] = shares[msg.sender].sub(sharesToBurn);
 
@@ -103,7 +115,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         emit LiquidityRemoved(msg.sender, sharesToBurn, amountTokenA, amountTokenB);
     }
 
-    function swap(address tokenIn, uint256 amountIn, uint256 minTokenOut) external returns (uint256) {
+    function swap(address tokenIn, uint256 amountIn, uint256 minTokenOut) external onlyRouter returns (uint256) {
         require(tokenIn == tokenA || tokenIn == tokenB, InvalidAddress());
         require(amountIn > 0, InvalidAmount());
         require(minTokenOut > 0, InvalidAmount());
