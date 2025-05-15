@@ -12,12 +12,10 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     ERC20Mock public tokenB;
     address public contractAddress;
     address public contractOwner = address(2);
-    KmanDEXRouter public kmanDEXRouter;
 
     function setUp() public {
         tokenA = new ERC20Mock("TokenA", "TKA");
         tokenB = new ERC20Mock("TokenB", "TKB");
-        kmanDEXRouter = new KmanDEXRouter(address(0), address(0));
         kmanDEXPool = new KmanDEXPool(contractOwner, address(this), address(this), address(tokenA), address(tokenB));
 
         tokenA.approve(address(kmanDEXPool), type(uint256).max);
