@@ -7,6 +7,7 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
+  MAIN_NET_URL: ${{ secrets.MAIN_NET_URL }}
 
 jobs:
   check:
