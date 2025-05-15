@@ -1,18 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
+import "./interfaces/FactoryInterface.sol";
 import {KmanDEXPool, KmanDEXPoolInterface} from "./KmanDEXPool.sol";
-
-interface FactoryInterface {
-    error InvalidAddress();
-    error IndenticalPoolAddresses(address);
-    error PoolAlreadyExists(address, address);
-
-    event PoolCreated(address indexed tokenA, address indexed tokenB, address indexed pairAddress);
-
-    function getPoolAddress(address tokenA, address tokenB) external view returns (address);
-    function createPool(address tokenA, address tokenB) external returns (address);
-}
 
 contract KmanDEXFactory is FactoryInterface {
     address public contractOwner;
