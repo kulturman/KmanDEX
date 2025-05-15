@@ -13,9 +13,6 @@ contract KmanDEXRouter {
     address public immutable uniswapRouter;
     address public immutable feeCollector; //Contract owner
 
-    uint256 public constant FEE_BPS = 10; // 0.1% (10 basis points)
-    uint256 public constant BPS_DENOM = 10_000;
-
     event SwapForwarded(address indexed user, address tokenIn, address tokenOut, uint256 amountIn, uint256 feeTaken);
 
     constructor(address _factory, address _uniRouter, address _collector) {
