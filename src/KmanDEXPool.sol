@@ -28,7 +28,6 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     using SafeMath for uint256;
 
     address public contactOwner;
-
     address private factory;
     address private router;
     address public tokenA;
@@ -187,16 +186,16 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         paths[1] = tokenOut;
 
         uint256 fees = amountIn.div(UNISWAP_ROUTING_FEE);
-        uint256 amountInWithFees = amountIn.sub(fees);
+        uint256 amountInMinusFees = amountIn.sub(fees);
 
-        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountInWithFees);
-        IERC20(tokenIn).approve(address(UNISWAP_ROUTER), amountInWithFees);
+        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).approve(address(UNISWAP_ROUTER), amountInMinusFees);
 
         //The fees goes to the contract owner (ME!!), indeed I did not use LP
-        IERC20(tokenIn).transferFrom(msg.sender, contactOwner, fees);
+        IERC20(tokenIn).transfer(contactOwner, fees);
 
         uint256[] memory amounts = IUniswapV2Router(UNISWAP_ROUTER).swapExactTokensForTokens(
-            amountInWithFees, minTokenOut, paths, address(this), block.timestamp
+            amountInMinusFees, minTokenOut, paths, msg.sender, block.timestamp
         );
 
         return amounts[1];
