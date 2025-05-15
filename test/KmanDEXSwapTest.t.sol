@@ -24,16 +24,16 @@ contract KmanDEXSwapTest is Test {
 
     function testRevertsSwapWhenMinimumAmountNotMet() public {
         // Swap 1000 TokenA for TokenB
-        kmanDEXPool.investLiquidity(10_000, 5_000, 1);
+        kmanDEXPool.investLiquidity(address(this), 10_000, 5_000, 1);
         uint256 amountIn = 1_000;
 
         vm.expectRevert(abi.encodeWithSelector(KmanDEXPoolInterface.MinimumAmountNotMet.selector, 1000, 454));
-        kmanDEXPool.swap(address(tokenA), amountIn, 1000);
+        kmanDEXPool.swap(address(this), address(tokenA), amountIn, 1000);
     }
 
     function testSwapTokenAToTokenB() public {
         // Swap 1000 TokenA for TokenB
-        kmanDEXPool.investLiquidity(10_000, 5_000, 1);
+        kmanDEXPool.investLiquidity(address(this), 10_000, 5_000, 1);
         uint256 amountIn = 1_000;
         uint256 senderTokenABalanceBeforeSwap = tokenA.balanceOf(contractAddress);
         uint256 senderTokenBBalanceBeforeSwap = tokenB.balanceOf(contractAddress);
@@ -41,7 +41,7 @@ contract KmanDEXSwapTest is Test {
         vm.expectEmit();
         emit KmanDEXPoolInterface.Swapped(contractAddress, address(tokenA), amountIn, 454);
 
-        uint256 amountOut = kmanDEXPool.swap(address(tokenA), amountIn, 100);
+        uint256 amountOut = kmanDEXPool.swap(address(this), address(tokenA), amountIn, 100);
 
         //We apply .2% fee, so we should get 1000 - 2 = 998, but we have 10_000 TokenA and 5_000 TokenB,
         assertEq(amountOut, 454, "Amount out should be 454");
@@ -68,7 +68,7 @@ contract KmanDEXSwapTest is Test {
 
     function testSwapTokenBToTokenA() public {
         // Swap 1000 TokenB for TokenA, we should get 454 TokenA just like in the previous test
-        kmanDEXPool.investLiquidity(5_000, 10_000, 1);
+        kmanDEXPool.investLiquidity(address(this), 5_000, 10_000, 1);
         uint256 amountIn = 1_000;
         uint256 senderTokenABalanceBeforeSwap = tokenA.balanceOf(contractAddress);
         uint256 senderTokenBBalanceBeforeSwap = tokenB.balanceOf(contractAddress);
@@ -76,7 +76,7 @@ contract KmanDEXSwapTest is Test {
         vm.expectEmit();
         emit KmanDEXPoolInterface.Swapped(contractAddress, address(tokenB), amountIn, 454);
 
-        uint256 amountOut = kmanDEXPool.swap(address(tokenB), amountIn, 100);
+        uint256 amountOut = kmanDEXPool.swap(address(this), address(tokenB), amountIn, 100);
 
         assertEq(amountOut, 454, "Amount out should be 454");
 

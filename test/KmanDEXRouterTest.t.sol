@@ -31,10 +31,10 @@ contract KmanDEXRouterTest is Test {
         IERC20(USDC).approve(pool, type(uint256).max);
         IERC20(WETH).approve(pool, type(uint256).max);
 
-        KmanDEXPoolInterface(pool).investLiquidity(10_000, 5_000, 1);
+        KmanDEXPoolInterface(pool).investLiquidity(address(router), 10_000, 5_000, 1);
         IERC20(USDC).approve(address(router), 1_000);
 
-        vm.expectCall(pool, abi.encodeWithSelector(KmanDEXPoolInterface.swap.selector, USDC, 1_000, 1));
+        vm.expectCall(pool, abi.encodeWithSelector(KmanDEXPoolInterface.swap.selector, address(router), USDC, 1_000, 1));
 
         /*
             Just like when we called the pool directly, testing just one case is enough, we don't really need because we checked
@@ -52,10 +52,11 @@ contract KmanDEXRouterTest is Test {
         IERC20(WETH).approve(pool, type(uint256).max);
 
         vm.expectCall(
-            address(pool), abi.encodeWithSelector(KmanDEXPoolInterface.investLiquidity.selector, 10000, 5000, 1)
+            address(pool),
+            abi.encodeWithSelector(KmanDEXPoolInterface.investLiquidity.selector, address(router), 10000, 5000, 1)
         );
 
-        KmanDEXPoolInterface(pool).investLiquidity(10_000, 5_000, 1);
+        router.investLiquidity(USDC, WETH, 10000, 5000, 1);
     }
 
     function testWithdrawLiquidity() public {
@@ -65,10 +66,12 @@ contract KmanDEXRouterTest is Test {
         IERC20(USDC).approve(pool, type(uint256).max);
         IERC20(WETH).approve(pool, type(uint256).max);
 
-        KmanDEXPoolInterface(pool).investLiquidity(10_000, 5_000, 1);
-        vm.expectCall(address(pool), abi.encodeWithSelector(KmanDEXPoolInterface.withdrawLiquidity.selector, 1));
+        KmanDEXPoolInterface(pool).investLiquidity(address(router), 10_000, 5_000, 1);
+        vm.expectCall(
+            address(pool), abi.encodeWithSelector(KmanDEXPoolInterface.withdrawLiquidity.selector, address(router), 1)
+        );
 
-        KmanDEXPoolInterface(pool).withdrawLiquidity(1);
+        router.withdrawLiquidity(USDC, WETH, 1);
     }
 
     function testSwapWithNonExistentPool() public {

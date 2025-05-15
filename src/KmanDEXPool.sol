@@ -19,9 +19,12 @@ interface KmanDEXPoolInterface {
     event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
     event Swapped(address indexed sender, address tokenIn, uint256 amountIn, uint256 amountOut);
 
-    function investLiquidity(uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares) external;
-    function withdrawLiquidity(uint256 sharesToBurn) external;
-    function swap(address tokenIn, uint256 amountIn, uint256 minTokenOut) external returns (uint256 amountOut);
+    function investLiquidity(address realSender, uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares)
+        external;
+    function withdrawLiquidity(address realSender, uint256 sharesToBurn) external;
+    function swap(address realSender, address tokenIn, uint256 amountIn, uint256 minTokenOut)
+        external
+        returns (uint256 amountOut);
 }
 
 contract KmanDEXPool is KmanDEXPoolInterface {
@@ -62,14 +65,17 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         router = newRouter;
     }
 
-    function investLiquidity(uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares) external onlyRouter {
+    function investLiquidity(address realSender, uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares)
+        external
+        onlyRouter
+    {
         require(amountTokenA > 0 && amountTokenB > 0, InvalidAmount());
-        require(msg.sender != address(0), InvalidAddress());
+        require(realSender != address(0), InvalidAddress());
 
         if (totalShares == 0) {
             //First investor
             totalShares = INITIAL_SHARES;
-            shares[msg.sender] = INITIAL_SHARES;
+            shares[realSender] = INITIAL_SHARES;
 
             require(minimumShares <= INITIAL_SHARES, MinimumSharesNotMet(minimumShares, INITIAL_SHARES));
         } else {
@@ -79,7 +85,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
             require(minimumShares <= sharesToMint, MinimumSharesNotMet(minimumShares, sharesToMint));
 
-            shares[msg.sender] = sharesToMint.add(shares[msg.sender]);
+            shares[realSender] = sharesToMint.add(shares[realSender]);
             totalShares = sharesToMint.add(totalShares);
         }
 
@@ -88,15 +94,15 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         //Use safe math library for multiplication to prevent overflow later
         invariant = tokenAAmount.mul(tokenBAmount);
-        require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA));
-        require(IERC20(tokenB).transferFrom(msg.sender, address(this), amountTokenB));
+        require(IERC20(tokenA).transferFrom(realSender, address(this), amountTokenA));
+        require(IERC20(tokenB).transferFrom(realSender, address(this), amountTokenB));
 
-        emit LiquidityAdded(msg.sender, amountTokenA, amountTokenB);
+        emit LiquidityAdded(realSender, amountTokenA, amountTokenB);
     }
 
-    function withdrawLiquidity(uint256 sharesToBurn) external onlyRouter {
-        require(shares[msg.sender] >= sharesToBurn, NotEnoughShares(shares[msg.sender], sharesToBurn));
-        shares[msg.sender] = shares[msg.sender].sub(sharesToBurn);
+    function withdrawLiquidity(address realSender, uint256 sharesToBurn) external onlyRouter {
+        require(shares[realSender] >= sharesToBurn, NotEnoughShares(shares[realSender], sharesToBurn));
+        shares[realSender] = shares[realSender].sub(sharesToBurn);
 
         uint256 amountTokenA = sharesToBurn.mul(tokenAAmount).div(totalShares);
         uint256 amountTokenB = sharesToBurn.mul(tokenBAmount).div(totalShares);
@@ -108,13 +114,17 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         invariant = tokenAAmount.mul(tokenBAmount);
 
-        require(IERC20(tokenA).transfer(msg.sender, amountTokenA));
-        require(IERC20(tokenB).transfer(msg.sender, amountTokenB));
+        require(IERC20(tokenA).transfer(realSender, amountTokenA));
+        require(IERC20(tokenB).transfer(realSender, amountTokenB));
 
-        emit LiquidityRemoved(msg.sender, sharesToBurn, amountTokenA, amountTokenB);
+        emit LiquidityRemoved(realSender, sharesToBurn, amountTokenA, amountTokenB);
     }
 
-    function swap(address tokenIn, uint256 amountIn, uint256 minTokenOut) external onlyRouter returns (uint256) {
+    function swap(address realSender, address tokenIn, uint256 amountIn, uint256 minTokenOut)
+        external
+        onlyRouter
+        returns (uint256)
+    {
         require(tokenIn == tokenA || tokenIn == tokenB, InvalidAddress());
         require(amountIn > 0, InvalidAmount());
         require(minTokenOut > 0, InvalidAmount());
@@ -122,18 +132,18 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         address tokenOut = tokenIn == tokenA ? tokenB : tokenA;
 
         if (tokenAAmount == 0 || tokenBAmount == 0) {
-            return swapWithUniswap(tokenIn, tokenOut, amountIn, minTokenOut);
+            return swapWithUniswap(realSender, tokenIn, tokenOut, amountIn, minTokenOut);
         }
 
         //Refactor later to avoid code duplication
         if (tokenIn == tokenA) {
-            return swapTokenAtoTokenB(amountIn, minTokenOut);
+            return swapTokenAtoTokenB(realSender, amountIn, minTokenOut);
         } else {
-            return swapTokenBtoTokenA(amountIn, minTokenOut);
+            return swapTokenBtoTokenA(realSender, amountIn, minTokenOut);
         }
     }
 
-    function swapTokenAtoTokenB(uint256 amountIn, uint256 minTokenOut) internal returns (uint256) {
+    function swapTokenAtoTokenB(address realSender, uint256 amountIn, uint256 minTokenOut) internal returns (uint256) {
         uint256 fees = amountIn / FEE_RATE;
         uint256 amountInWithFees = amountIn - fees;
 
@@ -148,14 +158,14 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         invariant = tokenAAmount * tokenBAmount;
 
-        require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountIn));
-        require(IERC20(tokenB).transfer(msg.sender, amountOut));
+        require(IERC20(tokenA).transferFrom(realSender, address(this), amountIn));
+        require(IERC20(tokenB).transfer(realSender, amountOut));
 
-        emit Swapped(msg.sender, tokenA, amountIn, amountOut);
+        emit Swapped(realSender, tokenA, amountIn, amountOut);
         return amountOut;
     }
 
-    function swapTokenBtoTokenA(uint256 amountIn, uint256 minTokenOut) internal returns (uint256) {
+    function swapTokenBtoTokenA(address realSender, uint256 amountIn, uint256 minTokenOut) internal returns (uint256) {
         uint256 fees = amountIn / FEE_RATE;
         uint256 amountInWithFees = amountIn - fees;
 
@@ -170,17 +180,20 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         invariant = tokenAAmount * tokenBAmount;
 
-        require(IERC20(tokenB).transferFrom(msg.sender, address(this), amountIn));
-        require(IERC20(tokenA).transfer(msg.sender, amountOut));
+        require(IERC20(tokenB).transferFrom(realSender, address(this), amountIn));
+        require(IERC20(tokenA).transfer(realSender, amountOut));
 
-        emit Swapped(msg.sender, tokenB, amountIn, amountOut);
+        emit Swapped(realSender, tokenB, amountIn, amountOut);
         return amountOut;
     }
 
-    function swapWithUniswap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minTokenOut)
-        internal
-        returns (uint256)
-    {
+    function swapWithUniswap(
+        address realSender,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minTokenOut
+    ) internal returns (uint256) {
         address[] memory paths = new address[](2);
         paths[0] = tokenIn;
         paths[1] = tokenOut;
@@ -188,14 +201,14 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         uint256 fees = amountIn.div(UNISWAP_ROUTING_FEE);
         uint256 amountInMinusFees = amountIn.sub(fees);
 
-        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).transferFrom(realSender, address(this), amountIn);
         IERC20(tokenIn).approve(address(UNISWAP_ROUTER), amountInMinusFees);
 
         //The fees goes to the contract owner (ME!!), indeed I did not use LP
         IERC20(tokenIn).transfer(contactOwner, fees);
 
         uint256[] memory amounts = IUniswapV2Router(UNISWAP_ROUTER).swapExactTokensForTokens(
-            amountInMinusFees, minTokenOut, paths, msg.sender, block.timestamp
+            amountInMinusFees, minTokenOut, paths, realSender, block.timestamp
         );
 
         return amounts[1];

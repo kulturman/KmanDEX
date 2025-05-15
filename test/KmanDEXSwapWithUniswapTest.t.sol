@@ -29,7 +29,7 @@ contract KmanDEXSwapWithUniswapTest is Test {
         uint256 usdcBalanceBefore = IERC20(USDC).balanceOf(address(kmanDEXPool));
         uint256 wethBalanceBefore = IERC20(WETH).balanceOf(address(kmanDEXPool));
 
-        kmanDEXPool.swap(USDC, 10000, 1);
+        kmanDEXPool.swap(address(this), USDC, 10000, 1);
 
         assertEq(IERC20(USDC).balanceOf(address(kmanDEXPool)), usdcBalanceBefore, "USDC balance should be the same");
         assertEq(IERC20(WETH).balanceOf(address(kmanDEXPool)), wethBalanceBefore, "ETH balance should be the same");

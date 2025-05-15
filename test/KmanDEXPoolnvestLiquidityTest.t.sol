@@ -26,7 +26,7 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     function testInvestLiquidityWithEmptyPool() public {
         vm.expectEmit();
         emit KmanDEXPoolInterface.LiquidityAdded(contractAddress, 10000, 5000);
-        kmanDEXPool.investLiquidity(10000, 5000, 1);
+        kmanDEXPool.investLiquidity(address(this), 10000, 5000, 1);
 
         assertEq(kmanDEXPool.totalShares(), kmanDEXPool.INITIAL_SHARES(), "Total shares should be 1000");
         assertEq(kmanDEXPool.shares(contractAddress), kmanDEXPool.INITIAL_SHARES(), "Sender shares should be 1000");
@@ -42,13 +42,13 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
 
     function testRevertsWhenMinimumSharesNotMetOnEmptyPool() public {
         vm.expectRevert(abi.encodeWithSelector(KmanDEXPoolInterface.MinimumSharesNotMet.selector, 2000, 1000));
-        kmanDEXPool.investLiquidity(10000, 5000, 2000);
+        kmanDEXPool.investLiquidity(address(this), 10000, 5000, 2000);
     }
 
     function testRevertsWhenMinimumSharesNotMetOnNonEmptyPool() public {
-        kmanDEXPool.investLiquidity(10000, 5000, 1);
+        kmanDEXPool.investLiquidity(address(this), 10000, 5000, 1);
         vm.expectRevert(abi.encodeWithSelector(KmanDEXPoolInterface.MinimumSharesNotMet.selector, 2000, 1000));
-        kmanDEXPool.investLiquidity(10000, 5000, 2000);
+        kmanDEXPool.investLiquidity(address(this), 10000, 5000, 2000);
     }
 
     function testInvestLiquidityWithNonEmptyPool() public {
@@ -57,14 +57,14 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
         tokenA.transfer(secondInvestor, 100_000);
         tokenB.transfer(secondInvestor, 100_000);
 
-        kmanDEXPool.investLiquidity(20_000, 10_000, 1);
+        kmanDEXPool.investLiquidity(address(this), 20_000, 10_000, 1);
 
         kmanDEXPool.changeRouterAddress(secondInvestor);
         vm.startPrank(secondInvestor);
         tokenA.approve(address(kmanDEXPool), type(uint256).max);
         tokenB.approve(address(kmanDEXPool), type(uint256).max);
 
-        kmanDEXPool.investLiquidity(10_000, 5_000, 1);
+        kmanDEXPool.investLiquidity(secondInvestor, 10_000, 5_000, 1);
 
         assertEq(kmanDEXPool.shares(contractAddress), 1_000, "First investor should have 1000 shares");
         assertEq(kmanDEXPool.shares(secondInvestor), 500, "Second investor should have 500 shares");
@@ -79,8 +79,8 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     }
 
     function testInvestLiquidityCumulatesForSameInvestor() public {
-        kmanDEXPool.investLiquidity(20_000, 10_000, 1);
-        kmanDEXPool.investLiquidity(30_000, 15_000, 1);
+        kmanDEXPool.investLiquidity(address(this), 20_000, 10_000, 1);
+        kmanDEXPool.investLiquidity(address(this), 30_000, 15_000, 1);
 
         assertEq(kmanDEXPool.shares(contractAddress), 2_500, "First investor should have all shares (1000 + 1500)");
         assertEq(kmanDEXPool.totalShares(), 2_500, "Total shares should be 2500");

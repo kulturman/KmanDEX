@@ -15,6 +15,8 @@ contract KmanDEXRouter {
 
     event SwapForwarded(address indexed user, address tokenIn, address tokenOut, uint256 amountIn, uint256 feeTaken);
 
+    error PoolDoesNotExist(address tokenA, address tokenB);
+
     constructor(address _uniRouter, address _collector) {
         factory = address(new KmanDEXFactory());
         uniswapRouter = _uniRouter;
@@ -29,14 +31,14 @@ contract KmanDEXRouter {
         uint256 minimumShares
     ) external {
         address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
-        require(pool != address(0), "Pool does not exist");
-        KmanDEXPoolInterface(pool).investLiquidity(amountTokenA, amountTokenB, minimumShares);
+        require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
+        KmanDEXPoolInterface(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
     }
 
     function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external {
         address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
         require(pool != address(0), "Pool does not exist");
-        KmanDEXPoolInterface(pool).withdrawLiquidity(sharesToBurn);
+        KmanDEXPoolInterface(pool).withdrawLiquidity(msg.sender, sharesToBurn);
     }
 
     function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external returns (uint256) {
@@ -46,13 +48,13 @@ contract KmanDEXRouter {
 
         if (pool != address(0)) {
             IERC20(tokenIn).approve(pool, amountIn);
-            return KmanDEXPoolInterface(pool).swap(tokenIn, amountIn, minOut);
+            return KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
         } else {
             pool = FactoryInterface(factory).createPool(tokenIn, tokenOut);
             require(pool != address(0), "Pool creation failed");
 
             IERC20(tokenIn).approve(pool, amountIn);
-            return KmanDEXPoolInterface(pool).swap(tokenIn, amountIn, minOut);
+            return KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
         }
     }
 }
