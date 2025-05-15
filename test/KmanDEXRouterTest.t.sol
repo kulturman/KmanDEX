@@ -41,15 +41,39 @@ contract KmanDEXRouterTest is Test {
         assertEq(amountOut, 454, "Amount out should be 454");
     }
 
+    function testInvestLiquidity() public {
+        address pool = factory.createPool(USDC, WETH);
+        //Authorize investment in pool
+        IERC20(USDC).approve(pool, type(uint256).max);
+        IERC20(WETH).approve(pool, type(uint256).max);
+
+        vm.expectCall(
+            address(pool), abi.encodeWithSelector(KmanDEXPoolInterface.investLiquidity.selector, 10000, 5000, 1)
+        );
+
+        KmanDEXPoolInterface(pool).investLiquidity(10_000, 5_000, 1);
+    }
+
+    function testWithdrawLiquidity() public {
+        address pool = factory.createPool(USDC, WETH);
+        //Authorize investment in pool
+        IERC20(USDC).approve(pool, type(uint256).max);
+        IERC20(WETH).approve(pool, type(uint256).max);
+
+        KmanDEXPoolInterface(pool).investLiquidity(10_000, 5_000, 1);
+        vm.expectCall(address(pool), abi.encodeWithSelector(KmanDEXPoolInterface.withdrawLiquidity.selector, 1));
+
+        KmanDEXPoolInterface(pool).withdrawLiquidity(1);
+    }
+
     function testSwapWithNonExistentPool() public {
         KmanDEXRouter router = new KmanDEXRouter(address(factory), uniswapRouter, feeCollector);
         IERC20(USDC).approve(address(router), 1_000);
 
-        //vm.expectCall(pool, abi.encodeWithSelector(KmanDEXPoolInterface.swap.selector, USDC, 1_000, 1));
-
-        router.swap(address(USDC), address(WETH), 1_000, 1);
+        uint256 amountOut = router.swap(address(USDC), address(WETH), 1_000, 1);
         address pool = FactoryInterface(factory).getPoolAddress(USDC, WETH);
 
         assertNotEq(pool, address(0));
+        assertGt(amountOut, 0);
     }
 }
