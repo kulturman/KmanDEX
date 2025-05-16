@@ -42,10 +42,6 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         _;
     }
 
-    function changeRouterAddress(address newRouter) external onlyRouter {
-        router = newRouter;
-    }
-
     function investLiquidity(address realSender, uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares)
         external
         onlyRouter

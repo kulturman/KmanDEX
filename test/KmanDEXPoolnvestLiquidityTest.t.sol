@@ -16,11 +16,11 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     function setUp() public {
         tokenA = new ERC20Mock("TokenA", "TKA");
         tokenB = new ERC20Mock("TokenB", "TKB");
-        kmanDEXPool = new KmanDEXPool(contractOwner, address(this), address(this), address(tokenA), address(tokenB));
+        contractAddress = address(this);
+        kmanDEXPool = new KmanDEXPool(contractOwner, address(this), contractAddress, address(tokenA), address(tokenB));
 
         tokenA.approve(address(kmanDEXPool), type(uint256).max);
         tokenB.approve(address(kmanDEXPool), type(uint256).max);
-        contractAddress = address(this);
     }
 
     function testInvestLiquidityWithEmptyPool() public {
@@ -52,21 +52,25 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     }
 
     function testInvestLiquidityWithNonEmptyPool() public {
+        address firstInvestor = contractAddress;
         address secondInvestor = address(0x123);
+
+        tokenA.transfer(firstInvestor, 100_000);
+        tokenB.transfer(firstInvestor, 100_000);
 
         tokenA.transfer(secondInvestor, 100_000);
         tokenB.transfer(secondInvestor, 100_000);
 
-        kmanDEXPool.investLiquidity(address(this), 20_000, 10_000, 1);
+        kmanDEXPool.investLiquidity(firstInvestor, 20_000, 10_000, 1);
 
-        kmanDEXPool.changeRouterAddress(secondInvestor);
         vm.startPrank(secondInvestor);
         tokenA.approve(address(kmanDEXPool), type(uint256).max);
         tokenB.approve(address(kmanDEXPool), type(uint256).max);
+        vm.stopPrank();
 
         kmanDEXPool.investLiquidity(secondInvestor, 10_000, 5_000, 1);
 
-        assertEq(kmanDEXPool.shares(contractAddress), 1_000, "First investor should have 1000 shares");
+        assertEq(kmanDEXPool.shares(firstInvestor), 1_000, "First investor should have 1000 shares");
         assertEq(kmanDEXPool.shares(secondInvestor), 500, "Second investor should have 500 shares");
 
         assertEq(kmanDEXPool.totalShares(), 1_500, "Total shares should be 1500");
