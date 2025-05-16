@@ -36,7 +36,7 @@ contract KmanDEXRouter {
 
     function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external {
         address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
-        require(pool != address(0), "Pool does not exist");
+        require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
         KmanDEXPoolInterface(pool).withdrawLiquidity(msg.sender, sharesToBurn);
     }
 
@@ -50,7 +50,7 @@ contract KmanDEXRouter {
             return KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
         } else {
             pool = FactoryInterface(factory).createPool(tokenIn, tokenOut);
-            require(pool != address(0), "Pool creation failed");
+            require(pool != address(0), PoolDoesNotExist(tokenIn, tokenOut));
 
             IERC20(tokenIn).approve(pool, amountIn);
             return KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
