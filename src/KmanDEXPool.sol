@@ -113,55 +113,42 @@ contract KmanDEXPool is KmanDEXPoolInterface {
             return swapWithUniswap(realSender, tokenIn, tokenOut, amountIn, minTokenOut);
         }
 
-        //Refactor later to avoid code duplication
+        return _swap(realSender, tokenIn, tokenOut, amountIn, minTokenOut);
+    }
+
+    function _swap(address realSender, address tokenIn, address tokenOut, uint256 amountIn, uint256 minTokenOut)
+        internal
+        returns (uint256)
+    {
+        uint256 fee = amountIn / FEE_RATE;
+        uint256 amountInAfterFee = amountIn - fee;
+
+        // Update invariant logic based on which token is input
+        uint256 tokenInAmount = tokenIn == tokenA ? tokenAAmount : tokenBAmount;
+        uint256 tokenOutAmount = tokenOut == tokenA ? tokenAAmount : tokenBAmount;
+
+        uint256 newTokenInAmount = tokenInAmount + amountInAfterFee;
+        uint256 newTokenOutAmount = invariant / newTokenInAmount;
+        uint256 amountOut = tokenOutAmount - newTokenOutAmount;
+
+        require(amountOut >= minTokenOut && amountOut <= tokenOutAmount, MinimumAmountNotMet(minTokenOut, amountOut));
+
+        // Update internal state
         if (tokenIn == tokenA) {
-            return swapTokenAtoTokenB(realSender, amountIn, minTokenOut);
+            tokenAAmount += amountIn;
+            tokenBAmount = newTokenOutAmount;
         } else {
-            return swapTokenBtoTokenA(realSender, amountIn, minTokenOut);
+            tokenBAmount += amountIn;
+            tokenAAmount = newTokenOutAmount;
         }
-    }
-
-    function swapTokenAtoTokenB(address realSender, uint256 amountIn, uint256 minTokenOut) internal returns (uint256) {
-        uint256 fees = amountIn / FEE_RATE;
-        uint256 amountInWithFees = amountIn - fees;
-
-        uint256 tempAmountTokenB = tokenAAmount + amountInWithFees;
-        uint256 newAmountTokenB = invariant / tempAmountTokenB;
-        uint256 amountOut = tokenBAmount - newAmountTokenB;
-
-        require(amountOut >= minTokenOut && amountOut <= tokenBAmount, MinimumAmountNotMet(minTokenOut, amountOut));
-
-        tokenAAmount += amountIn;
-        tokenBAmount = newAmountTokenB;
 
         invariant = tokenAAmount * tokenBAmount;
 
-        require(IERC20(tokenA).transferFrom(address(router), address(this), amountIn));
-        require(IERC20(tokenB).transfer(realSender, amountOut));
+        // Transfer tokens
+        require(IERC20(tokenIn).transferFrom(address(router), address(this), amountIn));
+        require(IERC20(tokenOut).transfer(realSender, amountOut));
 
-        emit Swapped(realSender, tokenA, amountIn, amountOut);
-        return amountOut;
-    }
-
-    function swapTokenBtoTokenA(address realSender, uint256 amountIn, uint256 minTokenOut) internal returns (uint256) {
-        uint256 fees = amountIn / FEE_RATE;
-        uint256 amountInWithFees = amountIn - fees;
-
-        uint256 tempAmountTokenA = tokenBAmount + amountInWithFees;
-        uint256 newAmountTokenA = invariant / tempAmountTokenA;
-        uint256 amountOut = tokenAAmount - newAmountTokenA;
-
-        require(amountOut >= minTokenOut && amountOut <= tokenAAmount, MinimumAmountNotMet(minTokenOut, amountOut));
-
-        tokenBAmount += amountIn;
-        tokenAAmount = newAmountTokenA;
-
-        invariant = tokenAAmount * tokenBAmount;
-
-        require(IERC20(tokenB).transferFrom(address(router), address(this), amountIn));
-        require(IERC20(tokenA).transfer(realSender, amountOut));
-
-        emit Swapped(realSender, tokenB, amountIn, amountOut);
+        emit Swapped(realSender, tokenIn, amountIn, amountOut);
         return amountOut;
     }
 
