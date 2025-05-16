@@ -71,8 +71,9 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         //Use safe math library for multiplication to prevent overflow later
         invariant = tokenAAmount.mul(tokenBAmount);
-        require(IERC20(tokenA).transferFrom(realSender, address(this), amountTokenA));
-        require(IERC20(tokenB).transferFrom(realSender, address(this), amountTokenB));
+
+        require(IERC20(tokenA).transferFrom(router, address(this), amountTokenA));
+        require(IERC20(tokenB).transferFrom(router, address(this), amountTokenB));
 
         emit LiquidityAdded(realSender, amountTokenA, amountTokenB);
     }
@@ -135,7 +136,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         invariant = tokenAAmount * tokenBAmount;
 
-        require(IERC20(tokenA).transferFrom(realSender, address(this), amountIn));
+        require(IERC20(tokenA).transferFrom(address(router), address(this), amountIn));
         require(IERC20(tokenB).transfer(realSender, amountOut));
 
         emit Swapped(realSender, tokenA, amountIn, amountOut);
@@ -157,7 +158,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         invariant = tokenAAmount * tokenBAmount;
 
-        require(IERC20(tokenB).transferFrom(realSender, address(this), amountIn));
+        require(IERC20(tokenB).transferFrom(address(router), address(this), amountIn));
         require(IERC20(tokenA).transfer(realSender, amountOut));
 
         emit Swapped(realSender, tokenB, amountIn, amountOut);

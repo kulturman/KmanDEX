@@ -31,6 +31,12 @@ contract KmanDEXRouter {
     ) external {
         address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
         require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
+
+        IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA);
+        IERC20(tokenB).transferFrom(msg.sender, address(this), amountTokenB);
+        IERC20(tokenA).approve(pool, amountTokenA);
+        IERC20(tokenB).approve(pool, amountTokenB);
+
         KmanDEXPoolInterface(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
     }
 
@@ -43,17 +49,13 @@ contract KmanDEXRouter {
     function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external returns (uint256) {
         address pool = FactoryInterface(factory).getPoolAddress(tokenIn, tokenOut);
 
-        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
-
-        if (pool != address(0)) {
-            IERC20(tokenIn).approve(pool, amountIn);
-            return KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
-        } else {
+        if (pool == address(0)) {
             pool = FactoryInterface(factory).createPool(tokenIn, tokenOut);
             require(pool != address(0), PoolDoesNotExist(tokenIn, tokenOut));
-
-            IERC20(tokenIn).approve(pool, amountIn);
-            return KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
         }
+
+        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).approve(pool, amountIn);
+        return KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
     }
 }
