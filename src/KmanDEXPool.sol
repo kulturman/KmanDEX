@@ -39,8 +39,8 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     }
 
     function investLiquidity(address realSender, uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares)
-    external
-    onlyRouter
+        external
+        onlyRouter
     {
         require(amountTokenA > 0 && amountTokenB > 0, InvalidAmount());
         require(realSender != address(0), InvalidAddress());
@@ -50,10 +50,8 @@ contract KmanDEXPool is KmanDEXPoolInterface {
             shares[realSender] = INITIAL_SHARES;
             require(minimumShares <= INITIAL_SHARES, MinimumSharesNotMet(minimumShares, INITIAL_SHARES));
         } else {
-            uint256 sharesToMint = Math.min(
-                (amountTokenA * totalShares) / tokenAAmount,
-                (amountTokenB * totalShares) / tokenBAmount
-            );
+            uint256 sharesToMint =
+                Math.min((amountTokenA * totalShares) / tokenAAmount, (amountTokenB * totalShares) / tokenBAmount);
             require(minimumShares <= sharesToMint, MinimumSharesNotMet(minimumShares, sharesToMint));
             shares[realSender] += sharesToMint;
             totalShares += sharesToMint;
@@ -88,9 +86,9 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     }
 
     function swap(address realSender, address tokenIn, uint256 amountIn, uint256 minTokenOut)
-    external
-    onlyRouter
-    returns (uint256)
+        external
+        onlyRouter
+        returns (uint256)
     {
         require(tokenIn == tokenA || tokenIn == tokenB, InvalidAddress());
         require(amountIn > 0, InvalidAmount());
@@ -106,8 +104,8 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     }
 
     function _swap(address realSender, address tokenIn, address tokenOut, uint256 amountIn, uint256 minTokenOut)
-    internal
-    returns (uint256)
+        internal
+        returns (uint256)
     {
         uint256 fee = amountIn / FEE_RATE;
         uint256 amountInAfterFee = amountIn - fee;
