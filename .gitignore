@@ -13,3 +13,5 @@ docs/
 # Dotenv file
 contracts/.env
 .idea
+backend/dist
+backend/node_modules
