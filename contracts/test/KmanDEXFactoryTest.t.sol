@@ -23,7 +23,7 @@ contract KmanDEXFactoryTest is Test {
     }
 
     function testCreatesPoolFailsWithIdenticalAddresses() public {
-        vm.expectRevert(abi.encodeWithSelector(FactoryInterface.IndenticalPoolAddresses.selector, address(1)));
+        vm.expectRevert(abi.encodeWithSelector(FactoryInterface.IdenticalPoolAddresses.selector, address(1)));
         kmanDEXFactory.createPool(address(1), address(1));
     }
 

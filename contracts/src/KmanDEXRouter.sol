@@ -12,8 +12,6 @@ contract KmanDEXRouter {
     address public immutable uniswapRouter;
     address public immutable feeCollector; //Contract owner
 
-    event SwapForwarded(address indexed user, address tokenIn, address tokenOut, uint256 amountIn, uint256 feeTaken);
-
     error PoolDoesNotExist(address tokenA, address tokenB);
 
     constructor(address _uniRouter, address _collector) {

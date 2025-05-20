@@ -22,7 +22,7 @@ contract KmanDEXFactory is FactoryInterface {
 
     function createPool(address tokenA, address tokenB) external returns (address) {
         require(tokenA != address(0) && tokenB != address(0), InvalidAddress());
-        require(tokenA != tokenB, IndenticalPoolAddresses(tokenA));
+        require(tokenA != tokenB, IdenticalPoolAddresses(tokenA));
 
         KmanDEXPool newPool = new KmanDEXPool(contractOwner, address(this), router, tokenA, tokenB);
         //I may need to initialize newPool here, don't now yet

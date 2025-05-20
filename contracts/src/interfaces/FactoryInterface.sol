@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 interface FactoryInterface {
     error InvalidAddress();
-    error IndenticalPoolAddresses(address);
+    error IdenticalPoolAddresses(address);
     error PoolAlreadyExists(address, address);
 
     event PoolCreated(address indexed tokenA, address indexed tokenB, address indexed pairAddress);
