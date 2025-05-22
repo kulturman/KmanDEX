@@ -7,4 +7,5 @@ libs = ["lib"]
 
 [rpc_endpoints]
 main_net="${MAIN_NET_URL}"
+local_net="${LOCAL_CHAIN_URL}"
 sepolia="${SEPOLIA_URL}"

@@ -8,6 +8,7 @@ contract KmanDEXFactory is FactoryInterface {
     address public contractOwner;
     address public router;
     mapping(address => mapping(address => address)) private pools;
+    address[] public allPools;
 
     constructor() {
         contractOwner = msg.sender;
@@ -38,6 +39,8 @@ contract KmanDEXFactory is FactoryInterface {
 
         pools[minAddress][maxAddress] = address(newPool);
         emit PoolCreated(minAddress, maxAddress, address(newPool));
+
+        allPools.push(address(newPool));
 
         return address(newPool);
     }
