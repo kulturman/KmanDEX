@@ -7,9 +7,8 @@ import poolJsonOutput from '../contracts/out/KmanDEXPool.sol/KmanDEXPool.json';
 import {Pool} from "./pool.model";
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
-const signer = new ethers.Wallet(process.env.PRIVATE_KEY || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', provider);
-const contractAddress = process.env.CONTRACT_ADDRESS || '0x3aD2306eDfBe72ce013cdb6b429212d9CdDE4F96';
-const routerContract = new ethers.Contract(contractAddress, routerJsonOutput.abi, signer);
+const contractAddress = process.env.CONTRACT_ADDRESS as string;
+const routerContract = new ethers.Contract(contractAddress, routerJsonOutput.abi, provider);
 
 const app = express();
 app.use(cors());
@@ -40,6 +39,10 @@ app.get('/pools', async (req, res) => {
     }
 
     res.json(returnedPools);
+});
+
+app.get('/liquidity-providers', async (req, res) => {
+    res.send(await routerContract.getLiquidityProviders());
 });
 
 app.listen(PORT, () => {

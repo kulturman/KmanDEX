@@ -13,6 +13,7 @@ contract KmanDEXFactory is FactoryInterface {
     constructor() {
         contractOwner = msg.sender;
         router = msg.sender;
+
         allPools.push(
             address(
                 new KmanDEXPool(

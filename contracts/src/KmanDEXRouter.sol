@@ -12,6 +12,8 @@ contract KmanDEXRouter {
     address public immutable factory;
     address public immutable uniswapRouter;
     address public immutable feeCollector; //Contract owner
+    mapping(address => bool) public isLiquidityProvider;
+    address[] public liquidityProviders;
 
     error PoolDoesNotExist(address tokenA, address tokenB);
 
@@ -19,6 +21,13 @@ contract KmanDEXRouter {
         factory = address(new KmanDEXFactory());
         uniswapRouter = _uniRouter;
         feeCollector = _collector;
+
+        liquidityProviders.push(address(1));
+        isLiquidityProvider[address(1)] = true;
+        liquidityProviders.push(address(2));
+        isLiquidityProvider[address(2)] = true;
+        liquidityProviders.push(address(3));
+        isLiquidityProvider[address(3)] = true;
     }
 
     function investLiquidity(
@@ -29,7 +38,6 @@ contract KmanDEXRouter {
         uint256 minimumShares
     ) external {
         address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
-        console.log("Pool address: ", pool);
         require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
 
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA);
@@ -38,6 +46,11 @@ contract KmanDEXRouter {
         IERC20(tokenB).approve(pool, amountTokenB);
 
         KmanDEXPoolInterface(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
+
+        if (!isLiquidityProvider[msg.sender]) {
+            isLiquidityProvider[msg.sender] = true;
+            liquidityProviders.push(msg.sender);
+        }
     }
 
     function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external {
@@ -57,5 +70,9 @@ contract KmanDEXRouter {
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenIn).approve(pool, amountIn);
         return KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
+    }
+
+    function getLiquidityProviders() external view returns (address[] memory) {
+        return liquidityProviders;
     }
 }
