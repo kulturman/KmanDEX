@@ -10,4 +10,5 @@ interface FactoryInterface {
 
     function getPoolAddress(address tokenA, address tokenB) external view returns (address);
     function createPool(address tokenA, address tokenB) external returns (address);
+    function getAllPools() external view returns (address[] memory);
 }

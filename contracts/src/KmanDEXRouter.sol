@@ -21,13 +21,6 @@ contract KmanDEXRouter {
         factory = address(new KmanDEXFactory());
         uniswapRouter = _uniRouter;
         feeCollector = _collector;
-
-        liquidityProviders.push(address(1));
-        isLiquidityProvider[address(1)] = true;
-        liquidityProviders.push(address(2));
-        isLiquidityProvider[address(2)] = true;
-        liquidityProviders.push(address(3));
-        isLiquidityProvider[address(3)] = true;
     }
 
     function investLiquidity(
@@ -38,6 +31,7 @@ contract KmanDEXRouter {
         uint256 minimumShares
     ) external {
         address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
+        //pool = pool == address(0) ? FactoryInterface(factory).createPool(tokenA, tokenB) : pool;
         require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
 
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA);
@@ -48,6 +42,7 @@ contract KmanDEXRouter {
         KmanDEXPoolInterface(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
 
         if (!isLiquidityProvider[msg.sender]) {
+            console.log("Adding liquidity provider:", msg.sender);
             isLiquidityProvider[msg.sender] = true;
             liquidityProviders.push(msg.sender);
         }
@@ -74,5 +69,9 @@ contract KmanDEXRouter {
 
     function getLiquidityProviders() external view returns (address[] memory) {
         return liquidityProviders;
+    }
+
+    function getAllPools() external view returns (address[] memory) {
+        return FactoryInterface(factory).getAllPools();
     }
 }

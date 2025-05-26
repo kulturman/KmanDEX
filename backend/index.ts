@@ -5,10 +5,15 @@ import routerJsonOutput from '../contracts/out/KmanDEXRouter.sol/KmanDEXRouter.j
 import factoryJsonOutput from '../contracts/out/KmanDEXFactory.sol/KmanDEXFactory.json';
 import poolJsonOutput from '../contracts/out/KmanDEXPool.sol/KmanDEXPool.json';
 import {Pool} from "./pool.model";
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+if (!process.env.RPC_URL || !process.env.CONTRACT_ADDRESS) {
+    throw new Error('RPC_URL and CONTRACT_ADDRESS environment variables must be set');
+}
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
-const contractAddress = process.env.CONTRACT_ADDRESS as string;
-const routerContract = new ethers.Contract(contractAddress, routerJsonOutput.abi, provider);
 
 const app = express();
 app.use(cors());
@@ -17,7 +22,14 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 app.get('/pools', async (req, res) => {
+    const contractAddress = process.env.CONTRACT_ADDRESS as string;
+    const routerContract = new ethers.Contract(contractAddress, routerJsonOutput.abi, provider);
+
     const factoryContract = new ethers.Contract(await routerContract.factory(), factoryJsonOutput.abi, provider);
+
+    if (!factoryContract) {
+        res.status(500).json({ error: 'Factory contract not found' });
+    }
 
     const pools = await factoryContract.getAllPools();
     const returnedPools: Pool[] = [];
@@ -42,9 +54,14 @@ app.get('/pools', async (req, res) => {
 });
 
 app.get('/liquidity-providers', async (req, res) => {
+    const contractAddress = process.env.CONTRACT_ADDRESS as string;
+    const routerContract = new ethers.Contract(contractAddress, routerJsonOutput.abi, provider);
+
     res.send(await routerContract.getLiquidityProviders());
 });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+export default app;
