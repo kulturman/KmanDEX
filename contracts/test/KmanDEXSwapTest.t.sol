@@ -38,9 +38,6 @@ contract KmanDEXSwapTest is Test {
         uint256 senderTokenABalanceBeforeSwap = tokenA.balanceOf(contractAddress);
         uint256 senderTokenBBalanceBeforeSwap = tokenB.balanceOf(contractAddress);
 
-        vm.expectEmit();
-        emit KmanDEXPoolInterface.Swapped(contractAddress, address(tokenA), amountIn, 454);
-
         uint256 amountOut = kmanDEXPool.swap(address(this), address(tokenA), amountIn, 100);
 
         //We apply .2% fee, so we should get 1000 - 2 = 998, but we have 10_000 TokenA and 5_000 TokenB,
@@ -72,9 +69,6 @@ contract KmanDEXSwapTest is Test {
         uint256 amountIn = 1_000;
         uint256 senderTokenABalanceBeforeSwap = tokenA.balanceOf(contractAddress);
         uint256 senderTokenBBalanceBeforeSwap = tokenB.balanceOf(contractAddress);
-
-        vm.expectEmit();
-        emit KmanDEXPoolInterface.Swapped(contractAddress, address(tokenB), amountIn, 454);
 
         uint256 amountOut = kmanDEXPool.swap(address(this), address(tokenB), amountIn, 100);
 

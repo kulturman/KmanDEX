@@ -11,7 +11,6 @@ interface KmanDEXPoolInterface {
 
     event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
     event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
-    event Swapped(address indexed sender, address tokenIn, uint256 amountIn, uint256 amountOut);
 
     function investLiquidity(address realSender, uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares)
         external;

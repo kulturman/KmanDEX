@@ -17,6 +17,14 @@ contract KmanDEXRouter {
 
     error PoolDoesNotExist(address tokenA, address tokenB);
 
+    event SuccessfulSwap(
+        address indexed user,
+        address indexed tokenIn,
+        address indexed tokenOut,
+        uint256 amountIn,
+        uint256 amountOut
+    );
+
     constructor(address _uniRouter, address _collector) {
         factory = address(new KmanDEXFactory());
         uniswapRouter = _uniRouter;
@@ -68,7 +76,17 @@ contract KmanDEXRouter {
 
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenIn).approve(pool, amountIn);
-        return KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
+        uint256 amountOut = KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
+
+        emit SuccessfulSwap(
+            msg.sender,
+            tokenIn,
+            tokenOut,
+            amountIn,
+            amountOut
+        );
+
+        return amountOut;
     }
 
     function getLiquidityProviders() external view returns (address[] memory) {

@@ -35,6 +35,8 @@ contract KmanDEXRouterTest is Test {
         IERC20(USDC).approve(address(router), 1_000);
 
         vm.expectCall(pool, abi.encodeWithSelector(KmanDEXPoolInterface.swap.selector, address(router), USDC, 1_000, 1));
+        vm.expectEmit();
+        emit KmanDEXRouter.SuccessfulSwap(address(router), USDC, WETH, 1_000, 454);
 
         /*
             Just like when we called the pool directly, testing just one case is enough, we don't really need because we checked

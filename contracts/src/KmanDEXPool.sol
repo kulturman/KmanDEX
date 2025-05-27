@@ -132,7 +132,6 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         require(IERC20(tokenIn).transferFrom(router, address(this), amountIn));
         require(IERC20(tokenOut).transfer(realSender, amountOut));
 
-        emit Swapped(realSender, tokenIn, amountIn, amountOut);
         return amountOut;
     }
 
