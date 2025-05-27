@@ -31,7 +31,11 @@ contract KmanDEXRouter {
         uint256 minimumShares
     ) external {
         address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
-        //pool = pool == address(0) ? FactoryInterface(factory).createPool(tokenA, tokenB) : pool;
+
+        if (pool == address(0)) {
+            pool = FactoryInterface(factory).createPool(tokenA, tokenB);
+        }
+
         require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
 
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA);

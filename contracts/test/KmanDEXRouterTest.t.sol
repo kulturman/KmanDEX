@@ -44,6 +44,19 @@ contract KmanDEXRouterTest is Test {
         assertEq(amountOut, 454, "Amount out should be 454");
     }
 
+    function testInvestLiquidityCreatesLiquidityPoolIfNotAlreadyExists() public {
+        vm.startPrank(address(router));
+        //Authorize investment in pool, we approve the router
+        IERC20(USDC).approve(address(router), type(uint256).max);
+        IERC20(WETH).approve(address(router), type(uint256).max);
+
+        assertEq(factory.getPoolAddress(USDC, WETH), address(0), "Pool should not exist yet");
+
+        router.investLiquidity(USDC, WETH, 10000, 5000, 1);
+
+        assertNotEq(factory.getPoolAddress(USDC, WETH), address(0), "Pool should exist now");
+    }
+
     function testInvestLiquidity() public {
         vm.startPrank(address(router));
         address pool = factory.createPool(USDC, WETH);
