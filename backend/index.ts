@@ -60,6 +60,31 @@ app.get('/liquidity-providers', async (req, res) => {
     res.send(await routerContract.getLiquidityProviders());
 });
 
+app.get('/swaps', async (req, res) => {
+    const contractAddress = process.env.CONTRACT_ADDRESS as string;
+    const routerContract = new ethers.Contract(contractAddress, routerJsonOutput.abi, provider);
+
+    const topicFilter = routerContract.filters.SuccessfulSwap();
+    const events = await routerContract.queryFilter(topicFilter, 22476889, 'latest') as ethers.EventLog[];
+
+    res.json({
+        swapNumber: events.length,
+    });
+});
+
+app.get('/users', async (req, res) => {
+    const contractAddress = process.env.CONTRACT_ADDRESS as string;
+    const routerContract = new ethers.Contract(contractAddress, routerJsonOutput.abi, provider);
+
+    const topicFilter = routerContract.filters.SuccessfulSwap();
+    const events = await routerContract.queryFilter(topicFilter, 22476889, 'latest') as ethers.EventLog[];
+
+    const userAddresses = events.map(event => event.args[0]);
+    const uniqueUserAddresses = Array.from(new Set(userAddresses));
+
+    res.json(uniqueUserAddresses);
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

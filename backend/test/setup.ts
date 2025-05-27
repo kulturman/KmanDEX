@@ -38,7 +38,7 @@ export class TestEnvironment {
         this.anvilProcess = spawn('anvil', [
             '--port', '8545',
             '--fork-url', process.env.MAIN_NET_URL as string,
-            //'--fork-block-number', '22476889',
+            '--fork-block-number', '22476889',
         ]);
         await new Promise(resolve => setTimeout(resolve, 2000));
 

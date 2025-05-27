@@ -4,6 +4,10 @@ import {TestEnvironment} from "./test/setup";
 import app from "./index";
 import kmanDEXRouterJSON from '../contracts/out/KmanDEXRouter.sol/KmanDEXRouter.json';
 import factoryJsonOutput from "../contracts/out/KmanDEXFactory.sol/KmanDEXFactory.json";
+import {DecodedError, ErrorDecoder} from 'ethers-decode-error'
+
+const errorDecoder = ErrorDecoder.create()
+
 
 const erc20ABI = [
     "function approve(address spender, uint256 amount) external returns (bool)",
@@ -54,6 +58,8 @@ describe('Smart Contract Integration Tests', () => {
 
         usdc = new ethers.Contract(testEnv.getUSDCAddress(), erc20ABI, testWallet);
         weth = new ethers.Contract(testEnv.getWETHAddress(), erc20ABI, testWallet);
+
+        routerContract = routerContract.connect(testWallet);
     }, 30000); // 30s timeout for setup
 
     afterEach(async () => {
@@ -75,8 +81,6 @@ describe('Smart Contract Integration Tests', () => {
     }, 10000);
 
     it('should fetch all liquidity providers', async () => {
-        routerContract = routerContract.connect(testWallet);
-
         // Approve and wait for confirmations
         const tx1 = await usdc.approve(routerContractAddress, ethers.parseUnits('10000', 6));
         await tx1.wait();
@@ -101,4 +105,60 @@ describe('Smart Contract Integration Tests', () => {
             testWallet.address,
         ]));
     }, 20000);
+
+    it('Should get all swaps number', async () => {
+        const tx1 = await usdc.approve(routerContractAddress, ethers.parseUnits('10000', 6));
+        await tx1.wait();
+
+        const tx2 = await weth.approve(routerContractAddress, ethers.parseEther('5000'));
+        await tx2.wait();
+
+        // Actually invest liquidity and wait for confirmation
+        const tx3 = await routerContract.investLiquidity(
+            '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+            '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+            ethers.parseUnits('1000', 6),
+            ethers.parseEther('500'),
+            0
+        );
+        await tx3.wait();
+
+        try {
+            const tx4 = await routerContract.swap('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', ethers.parseUnits('100', 6), 0);
+            tx4.wait();
+        } catch (err) {
+            const decodedError: DecodedError = await errorDecoder.decode(err)
+            console.log(`Revert reason: ${decodedError.reason}`)
+        }
+        const response = await request(app).get('/swaps');
+
+        expect(response.status).toBe(200);
+        expect(response.body.swapNumber).toBe(1);
+    }, 20000)
+
+    it('Should get all users of the protocol (addresses)', async () => {
+        // Approve and wait for confirmations
+        const tx1 = await usdc.approve(routerContractAddress, ethers.parseUnits('10000', 6));
+        await tx1.wait();
+
+        const tx2 = await weth.approve(routerContractAddress, ethers.parseEther('5000'));
+        await tx2.wait();
+
+        // Actually invest liquidity and wait for confirmation
+        const tx3 = await routerContract.investLiquidity(
+            '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+            '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+            ethers.parseUnits('1000', 6),
+            ethers.parseEther('500'),
+            0
+        );
+        await tx3.wait();
+
+        const tx4 = await routerContract.swap('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', ethers.parseUnits('100', 6), 0);
+        tx4.wait();
+        const response = await request(app).get('/users');
+
+        expect(response.status).toBe(200);
+        expect(response.body).toContain(testWallet.address);
+    }, 20000)
 });
