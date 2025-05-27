@@ -65,7 +65,8 @@ app.get('/swaps', async (req, res) => {
     const routerContract = new ethers.Contract(contractAddress, routerJsonOutput.abi, provider);
 
     const topicFilter = routerContract.filters.SuccessfulSwap();
-    const events = await routerContract.queryFilter(topicFilter, 22476889, 'latest') as ethers.EventLog[];
+    const blockNumber = await provider.getBlockNumber();
+    const events = await routerContract.queryFilter(topicFilter, blockNumber - 500, 'latest') as ethers.EventLog[];
 
     res.json({
         swapNumber: events.length,
@@ -77,7 +78,8 @@ app.get('/users', async (req, res) => {
     const routerContract = new ethers.Contract(contractAddress, routerJsonOutput.abi, provider);
 
     const topicFilter = routerContract.filters.SuccessfulSwap();
-    const events = await routerContract.queryFilter(topicFilter, 22476889, 'latest') as ethers.EventLog[];
+    const blockNumber = await provider.getBlockNumber();
+    const events = await routerContract.queryFilter(topicFilter, blockNumber - 500, 'latest') as ethers.EventLog[];
 
     const userAddresses = events.map(event => event.args[0]);
     const uniqueUserAddresses = Array.from(new Set(userAddresses));
