@@ -66,9 +66,8 @@ library ERC1155Utils {
         bytes memory data
     ) internal {
         if (to.code.length > 0) {
-            try IERC1155Receiver(to).onERC1155BatchReceived(operator, from, ids, values, data) returns (
-                bytes4 response
-            ) {
+            try IERC1155Receiver(to).onERC1155BatchReceived(operator, from, ids, values, data) returns (bytes4 response)
+            {
                 if (response != IERC1155Receiver.onERC1155BatchReceived.selector) {
                     // Tokens rejected
                     revert IERC1155Errors.ERC1155InvalidReceiver(to);

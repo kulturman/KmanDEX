@@ -41,9 +41,8 @@ contract P256Test is Test {
         (bytes32 r, bytes32 s) = vm.signP256(privateKey, digest);
         s = _ensureLowerS(s);
 
-        (bool success, bytes memory returndata) = address(this).call(
-            abi.encodeCall(P256Test.verifyNative, (digest, r, s, bytes32(x), bytes32(y)))
-        );
+        (bool success, bytes memory returndata) =
+            address(this).call(abi.encodeCall(P256Test.verifyNative, (digest, r, s, bytes32(x), bytes32(y))));
         assertFalse(success);
         assertEq(returndata, abi.encodeWithSelector(Errors.MissingPrecompile.selector, address(0x100)));
     }

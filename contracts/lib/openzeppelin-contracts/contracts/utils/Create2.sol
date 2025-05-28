@@ -67,7 +67,11 @@ library Create2 {
      * @dev Returns the address where a contract will be stored if deployed via {deploy} from a contract located at
      * `deployer`. If `deployer` is this contract's address, returns the same value as {computeAddress}.
      */
-    function computeAddress(bytes32 salt, bytes32 bytecodeHash, address deployer) internal pure returns (address addr) {
+    function computeAddress(bytes32 salt, bytes32 bytecodeHash, address deployer)
+        internal
+        pure
+        returns (address addr)
+    {
         assembly ("memory-safe") {
             let ptr := mload(0x40) // Get free memory pointer
 

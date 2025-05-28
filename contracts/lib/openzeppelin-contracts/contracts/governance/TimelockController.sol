@@ -157,9 +157,13 @@ contract TimelockController is AccessControl, ERC721Holder, ERC1155Holder {
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(AccessControl, ERC1155Holder) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(AccessControl, ERC1155Holder)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 
@@ -230,13 +234,12 @@ contract TimelockController is AccessControl, ERC721Holder, ERC1155Holder {
      * @dev Returns the identifier of an operation containing a single
      * transaction.
      */
-    function hashOperation(
-        address target,
-        uint256 value,
-        bytes calldata data,
-        bytes32 predecessor,
-        bytes32 salt
-    ) public pure virtual returns (bytes32) {
+    function hashOperation(address target, uint256 value, bytes calldata data, bytes32 predecessor, bytes32 salt)
+        public
+        pure
+        virtual
+        returns (bytes32)
+    {
         return keccak256(abi.encode(target, value, data, predecessor, salt));
     }
 
@@ -334,8 +337,7 @@ contract TimelockController is AccessControl, ERC721Holder, ERC1155Holder {
     function cancel(bytes32 id) public virtual onlyRole(CANCELLER_ROLE) {
         if (!isOperationPending(id)) {
             revert TimelockUnexpectedOperationState(
-                id,
-                _encodeStateBitmap(OperationState.Waiting) | _encodeStateBitmap(OperationState.Ready)
+                id, _encodeStateBitmap(OperationState.Waiting) | _encodeStateBitmap(OperationState.Ready)
             );
         }
         delete _timestamps[id];
@@ -355,13 +357,12 @@ contract TimelockController is AccessControl, ERC721Holder, ERC1155Holder {
     // This function can reenter, but it doesn't pose a risk because _afterCall checks that the proposal is pending,
     // thus any modifications to the operation during reentrancy should be caught.
     // slither-disable-next-line reentrancy-eth
-    function execute(
-        address target,
-        uint256 value,
-        bytes calldata payload,
-        bytes32 predecessor,
-        bytes32 salt
-    ) public payable virtual onlyRoleOrOpenRole(EXECUTOR_ROLE) {
+    function execute(address target, uint256 value, bytes calldata payload, bytes32 predecessor, bytes32 salt)
+        public
+        payable
+        virtual
+        onlyRoleOrOpenRole(EXECUTOR_ROLE)
+    {
         bytes32 id = hashOperation(target, value, payload, predecessor, salt);
 
         _beforeCall(id, predecessor);

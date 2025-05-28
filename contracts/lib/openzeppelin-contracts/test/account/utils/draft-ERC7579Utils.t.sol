@@ -11,7 +11,15 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {PackedUserOperation, IAccount, IEntryPoint} from "@openzeppelin/contracts/interfaces/draft-IERC4337.sol";
 import {ERC4337Utils} from "@openzeppelin/contracts/account/utils/draft-ERC4337Utils.sol";
-import {ERC7579Utils, Mode, CallType, ExecType, ModeSelector, ModePayload, Execution} from "@openzeppelin/contracts/account/utils/draft-ERC7579Utils.sol";
+import {
+    ERC7579Utils,
+    Mode,
+    CallType,
+    ExecType,
+    ModeSelector,
+    ModePayload,
+    Execution
+} from "@openzeppelin/contracts/account/utils/draft-ERC7579Utils.sol";
 import {Test, Vm, console} from "forge-std/Test.sol";
 
 contract SampleAccount is IAccount, Ownable {
@@ -26,11 +34,11 @@ contract SampleAccount is IAccount, Ownable {
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
-    function validateUserOp(
-        PackedUserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 missingAccountFunds
-    ) external override returns (uint256 validationData) {
+    function validateUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
+        external
+        override
+        returns (uint256 validationData)
+    {
         require(msg.sender == address(ERC4337Utils.ENTRYPOINT_V07), "only from EP");
         // Check signature
         if (userOpHash.toEthSignedMessageHash().recover(userOp.signature) != owner()) {
@@ -39,7 +47,7 @@ contract SampleAccount is IAccount, Ownable {
 
         // If this is an execute call with a batch operation, log the call details from the calldata
         if (bytes4(userOp.callData[0x00:0x04]) == this.execute.selector) {
-            (CallType callType, , , ) = Mode.wrap(bytes32(userOp.callData[0x04:0x24])).decodeMode();
+            (CallType callType,,,) = Mode.wrap(bytes32(userOp.callData[0x04:0x24])).decodeMode();
 
             if (callType == ERC7579Utils.CALLTYPE_BATCH) {
                 // Remove the selector
@@ -71,7 +79,7 @@ contract SampleAccount is IAccount, Ownable {
         }
 
         if (missingAccountFunds > 0) {
-            (bool success, ) = payable(msg.sender).call{value: missingAccountFunds}("");
+            (bool success,) = payable(msg.sender).call{value: missingAccountFunds}("");
             success; // Silence warning. The entrypoint should validate the result.
         }
 
@@ -81,7 +89,7 @@ contract SampleAccount is IAccount, Ownable {
     function execute(Mode mode, bytes calldata executionCalldata) external payable {
         require(msg.sender == address(this) || msg.sender == address(ERC4337Utils.ENTRYPOINT_V07), "not auth");
 
-        (CallType callType, ExecType execType, , ) = mode.decodeMode();
+        (CallType callType, ExecType execType,,) = mode.decodeMode();
 
         // check if calltype is batch or single
         if (callType == ERC7579Utils.CALLTYPE_SINGLE) {
@@ -156,10 +164,8 @@ contract ERC7579UtilsTest is Test {
             signature: ""
         });
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            _ownerKey,
-            this.hashUserOperation(userOps[0]).toEthSignedMessageHash()
-        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            vm.sign(_ownerKey, this.hashUserOperation(userOps[0]).toEthSignedMessageHash());
         userOps[0].signature = abi.encodePacked(r, s, v);
 
         vm.recordLogs();
@@ -207,10 +213,8 @@ contract ERC7579UtilsTest is Test {
             signature: ""
         });
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            _ownerKey,
-            this.hashUserOperation(userOps[0]).toEthSignedMessageHash()
-        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            vm.sign(_ownerKey, this.hashUserOperation(userOps[0]).toEthSignedMessageHash());
         userOps[0].signature = abi.encodePacked(r, s, v);
 
         vm.expectRevert(
@@ -234,9 +238,9 @@ contract ERC7579UtilsTest is Test {
             uint256(0x20), // offset of calls[1], and value (!!)
             uint256(0), // offset of calls[2], and rel offset of data (!!)
             uint256(0) // offset of calls[3].
-            // There is one more to read by the array length, but it's not present here. This will be
-            // paymasterAndData.length during validation, pointing to an all-zero call.
-            // During execution, the offset will be 0, pointing to a call with value.
+                // There is one more to read by the array length, but it's not present here. This will be
+                // paymasterAndData.length during validation, pointing to an all-zero call.
+                // During execution, the offset will be 0, pointing to a call with value.
         );
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -265,10 +269,8 @@ contract ERC7579UtilsTest is Test {
             signature: ""
         });
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            _ownerKey,
-            this.hashUserOperation(userOps[0]).toEthSignedMessageHash()
-        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            vm.sign(_ownerKey, this.hashUserOperation(userOps[0]).toEthSignedMessageHash());
         userOps[0].signature = abi.encodePacked(r, s, v);
 
         vm.expectRevert(
@@ -392,9 +394,7 @@ contract ERC7579UtilsTest is Test {
 
         console.log(
             string.concat(
-                "Batch execute contents, as read during ",
-                duringValidation ? "validation" : "execution",
-                ": "
+                "Batch execute contents, as read during ", duringValidation ? "validation" : "execution", ": "
             )
         );
         console.log("  Execution[] length: %s", calls.length);

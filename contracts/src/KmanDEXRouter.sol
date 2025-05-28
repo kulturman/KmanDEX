@@ -5,8 +5,9 @@ import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol"
 import "../src/KmanDEXFactory.sol";
 import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 import {console} from "../lib/forge-std/src/console.sol";
+import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
-contract KmanDEXRouter {
+contract KmanDEXRouter is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address public immutable factory;
@@ -33,7 +34,7 @@ contract KmanDEXRouter {
         uint256 amountTokenA,
         uint256 amountTokenB,
         uint256 minimumShares
-    ) external {
+    ) external nonReentrant {
         address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
 
         if (pool == address(0)) {
@@ -56,13 +57,17 @@ contract KmanDEXRouter {
         }
     }
 
-    function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external {
+    function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external nonReentrant {
         address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
         require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
         KmanDEXPoolInterface(pool).withdrawLiquidity(msg.sender, sharesToBurn);
     }
 
-    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external returns (uint256) {
+    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut)
+        external
+        nonReentrant
+        returns (uint256)
+    {
         address pool = FactoryInterface(factory).getPoolAddress(tokenIn, tokenOut);
 
         if (pool == address(0)) {

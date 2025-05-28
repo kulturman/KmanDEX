@@ -17,6 +17,7 @@ contract ERC721ReceiverMock is IERC721Receiver {
     RevertType private immutable _error;
 
     event Received(address operator, address from, uint256 tokenId, bytes data, uint256 gas);
+
     error CustomError(bytes4);
 
     constructor(bytes4 retval, RevertType error) {
@@ -24,12 +25,10 @@ contract ERC721ReceiverMock is IERC721Receiver {
         _error = error;
     }
 
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes memory data
-    ) public returns (bytes4) {
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes memory data)
+        public
+        returns (bytes4)
+    {
         if (_error == RevertType.RevertWithoutMessage) {
             revert();
         } else if (_error == RevertType.RevertWithMessage) {

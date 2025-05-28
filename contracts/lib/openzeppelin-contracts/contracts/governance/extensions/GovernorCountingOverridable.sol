@@ -76,9 +76,12 @@ abstract contract GovernorCountingOverridable is GovernorVotes {
     /**
      * @dev Accessor to the internal vote counts.
      */
-    function proposalVotes(
-        uint256 proposalId
-    ) public view virtual returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes) {
+    function proposalVotes(uint256 proposalId)
+        public
+        view
+        virtual
+        returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes)
+    {
         uint256[3] storage votes = _proposalVotes[proposalId].votes;
         return (votes[uint8(VoteType.Against)], votes[uint8(VoteType.For)], votes[uint8(VoteType.Abstain)]);
     }
@@ -164,12 +167,11 @@ abstract contract GovernorCountingOverridable is GovernorVotes {
     }
 
     /// @dev Variant of {Governor-_castVote} that deals with vote overrides. Returns the overridden weight.
-    function _castOverride(
-        uint256 proposalId,
-        address account,
-        uint8 support,
-        string calldata reason
-    ) internal virtual returns (uint256) {
+    function _castOverride(uint256 proposalId, address account, uint8 support, string calldata reason)
+        internal
+        virtual
+        returns (uint256)
+    {
         _validateStateBitmap(proposalId, _encodeStateBitmap(ProposalState.Active));
 
         uint256 overriddenWeight = _countOverride(proposalId, account, support);
@@ -182,11 +184,11 @@ abstract contract GovernorCountingOverridable is GovernorVotes {
     }
 
     /// @dev Public function for casting an override vote. Returns the overridden weight.
-    function castOverrideVote(
-        uint256 proposalId,
-        uint8 support,
-        string calldata reason
-    ) public virtual returns (uint256) {
+    function castOverrideVote(uint256 proposalId, uint8 support, string calldata reason)
+        public
+        virtual
+        returns (uint256)
+    {
         address voter = _msgSender();
         return _castOverride(proposalId, voter, support, reason);
     }
@@ -204,12 +206,7 @@ abstract contract GovernorCountingOverridable is GovernorVotes {
             _hashTypedDataV4(
                 keccak256(
                     abi.encode(
-                        OVERRIDE_BALLOT_TYPEHASH,
-                        proposalId,
-                        support,
-                        voter,
-                        _useNonce(voter),
-                        keccak256(bytes(reason))
+                        OVERRIDE_BALLOT_TYPEHASH, proposalId, support, voter, _useNonce(voter), keccak256(bytes(reason))
                     )
                 )
             ),

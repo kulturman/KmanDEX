@@ -49,11 +49,7 @@ contract SignedMathTest is Test {
 
     // 2. more complex test, full int256 range
     function testAverage2(int256 a, int256 b) public pure {
-        (int256 result, int256 min, int256 max) = (
-            SignedMath.average(a, b),
-            SignedMath.min(a, b),
-            SignedMath.max(a, b)
-        );
+        (int256 result, int256 min, int256 max) = (SignedMath.average(a, b), SignedMath.min(a, b), SignedMath.max(a, b));
 
         // average must be between `a` and `b`
         assertGe(result, min);

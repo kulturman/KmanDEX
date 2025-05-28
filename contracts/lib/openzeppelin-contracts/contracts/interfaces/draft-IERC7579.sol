@@ -64,11 +64,10 @@ interface IERC7579Validator is IERC7579Module {
      * MUST return the ERC-1271 `MAGIC_VALUE` if the signature is valid
      * MUST NOT modify state
      */
-    function isValidSignatureWithSender(
-        address sender,
-        bytes32 hash,
-        bytes calldata signature
-    ) external view returns (bytes4);
+    function isValidSignatureWithSender(address sender, bytes32 hash, bytes calldata signature)
+        external
+        view
+        returns (bytes4);
 }
 
 /**
@@ -86,11 +85,9 @@ interface IERC7579Hook is IERC7579Module {
      *
      * MAY return arbitrary data in the `hookData` return value
      */
-    function preCheck(
-        address msgSender,
-        uint256 value,
-        bytes calldata msgData
-    ) external returns (bytes memory hookData);
+    function preCheck(address msgSender, uint256 value, bytes calldata msgData)
+        external
+        returns (bytes memory hookData);
 
     /**
      * @dev Called by the smart account after execution
@@ -133,10 +130,10 @@ interface IERC7579Execution {
      * MUST ensure adequate authorization control: i.e. onlyExecutorModule
      * If a mode is requested that is not supported by the Account, it MUST revert
      */
-    function executeFromExecutor(
-        bytes32 mode,
-        bytes calldata executionCalldata
-    ) external payable returns (bytes[] memory returnData);
+    function executeFromExecutor(bytes32 mode, bytes calldata executionCalldata)
+        external
+        payable
+        returns (bytes[] memory returnData);
 }
 
 /**
@@ -218,9 +215,8 @@ interface IERC7579ModuleConfig {
      *
      * MUST return true if the module is installed and false otherwise
      */
-    function isModuleInstalled(
-        uint256 moduleTypeId,
-        address module,
-        bytes calldata additionalContext
-    ) external view returns (bool);
+    function isModuleInstalled(uint256 moduleTypeId, address module, bytes calldata additionalContext)
+        external
+        view
+        returns (bool);
 }

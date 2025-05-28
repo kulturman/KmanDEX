@@ -13,7 +13,11 @@ contract ERC7579UtilsGlobalMock {
         return execType1 == execType2;
     }
 
-    function eqModeSelectorGlobal(ModeSelector modeSelector1, ModeSelector modeSelector2) internal pure returns (bool) {
+    function eqModeSelectorGlobal(ModeSelector modeSelector1, ModeSelector modeSelector2)
+        internal
+        pure
+        returns (bool)
+    {
         return modeSelector1 == modeSelector2;
     }
 
