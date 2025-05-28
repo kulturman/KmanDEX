@@ -18,11 +18,7 @@ contract KmanDEXRouter {
     error PoolDoesNotExist(address tokenA, address tokenB);
 
     event SuccessfulSwap(
-        address indexed user,
-        address indexed tokenIn,
-        address indexed tokenOut,
-        uint256 amountIn,
-        uint256 amountOut
+        address indexed user, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut
     );
 
     constructor(address _uniRouter, address _collector) {
@@ -78,13 +74,7 @@ contract KmanDEXRouter {
         IERC20(tokenIn).approve(pool, amountIn);
         uint256 amountOut = KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
 
-        emit SuccessfulSwap(
-            msg.sender,
-            tokenIn,
-            tokenOut,
-            amountIn,
-            amountOut
-        );
+        emit SuccessfulSwap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
 
         return amountOut;
     }
