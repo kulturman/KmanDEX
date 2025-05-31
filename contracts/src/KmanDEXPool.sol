@@ -44,19 +44,22 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     {
         require(amountTokenA > 0 && amountTokenB > 0, InvalidAmount());
         require(realSender != address(0), InvalidAddress());
+        //Use a local variable to avoid reading from storage multiple times
+        uint256 localTotalShares = totalShares;
 
-        if (totalShares == 0) {
-            totalShares = INITIAL_SHARES;
+        if (localTotalShares == 0) {
+            localTotalShares = INITIAL_SHARES;
             shares[realSender] = INITIAL_SHARES;
             require(minimumShares <= INITIAL_SHARES, MinimumSharesNotMet(minimumShares, INITIAL_SHARES));
         } else {
             uint256 sharesToMint =
-                Math.min((amountTokenA * totalShares) / tokenAAmount, (amountTokenB * totalShares) / tokenBAmount);
+                Math.min((amountTokenA * localTotalShares) / tokenAAmount, (amountTokenB * localTotalShares) / tokenBAmount);
             require(minimumShares <= sharesToMint, MinimumSharesNotMet(minimumShares, sharesToMint));
             shares[realSender] += sharesToMint;
-            totalShares += sharesToMint;
+            localTotalShares += sharesToMint;
         }
 
+        totalShares = localTotalShares;
         tokenAAmount += amountTokenA;
         tokenBAmount += amountTokenB;
         invariant = tokenAAmount * tokenBAmount;
@@ -70,14 +73,18 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     function withdrawLiquidity(address realSender, uint256 sharesToBurn) external onlyRouter {
         require(shares[realSender] >= sharesToBurn, NotEnoughShares(shares[realSender], sharesToBurn));
         shares[realSender] -= sharesToBurn;
+        uint256 localTotalShares = totalShares;
 
-        uint256 amountTokenA = (sharesToBurn * tokenAAmount) / totalShares;
-        uint256 amountTokenB = (sharesToBurn * tokenBAmount) / totalShares;
 
-        totalShares -= sharesToBurn;
+    uint256 amountTokenA = (sharesToBurn * tokenAAmount) / localTotalShares;
+        uint256 amountTokenB = (sharesToBurn * tokenBAmount) / localTotalShares;
+
+        localTotalShares -= sharesToBurn;
         tokenAAmount -= amountTokenA;
         tokenBAmount -= amountTokenB;
         invariant = tokenAAmount * tokenBAmount;
+
+        totalShares = localTotalShares;
 
         require(IERC20(tokenA).transfer(realSender, amountTokenA));
         require(IERC20(tokenB).transfer(realSender, amountTokenB));
@@ -103,15 +110,23 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         return _swap(realSender, tokenIn, tokenOut, amountIn, minTokenOut);
     }
 
-    function _swap(address realSender, address tokenIn, address tokenOut, uint256 amountIn, uint256 minTokenOut)
-        internal
-        returns (uint256)
-    {
+    function _swap(
+        address realSender,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minTokenOut
+    ) internal returns (uint256) {
         uint256 fee = amountIn / FEE_RATE;
         uint256 amountInAfterFee = amountIn - fee;
 
-        uint256 tokenInAmount = tokenIn == tokenA ? tokenAAmount : tokenBAmount;
-        uint256 tokenOutAmount = tokenOut == tokenA ? tokenAAmount : tokenBAmount;
+        // Cache storage variables locally
+        uint256 localTokenAAmount = tokenAAmount;
+        uint256 localTokenBAmount = tokenBAmount;
+
+        bool isAToB = tokenIn == tokenA;
+        uint256 tokenInAmount = isAToB ? localTokenAAmount : localTokenBAmount;
+        uint256 tokenOutAmount = isAToB ? localTokenBAmount : localTokenAAmount;
 
         uint256 newTokenInAmount = tokenInAmount + amountInAfterFee;
         uint256 newTokenOutAmount = invariant / newTokenInAmount;
@@ -119,11 +134,11 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         require(amountOut >= minTokenOut && amountOut <= tokenOutAmount, MinimumAmountNotMet(minTokenOut, amountOut));
 
-        if (tokenIn == tokenA) {
-            tokenAAmount += amountIn;
+        if (isAToB) {
+            tokenAAmount = localTokenAAmount + amountIn;
             tokenBAmount = newTokenOutAmount;
         } else {
-            tokenBAmount += amountIn;
+            tokenBAmount = localTokenBAmount + amountIn;
             tokenAAmount = newTokenOutAmount;
         }
 
@@ -134,6 +149,8 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         return amountOut;
     }
+
+
 
     function swapWithUniswap(
         address realSender,

@@ -26,11 +26,7 @@ contract KmanDEXFactory is FactoryInterface {
         require(tokenA != tokenB, IdenticalPoolAddresses(tokenA));
 
         KmanDEXPool newPool = new KmanDEXPool(contractOwner, address(this), router, tokenA, tokenB);
-        //I may need to initialize newPool here, don't now yet
 
-        // We use less memory
-        //pools[tokenA][tokenB] = address(newPool);
-        //pools[tokenB][tokenA] = address(newPool);
         (address minAddress, address maxAddress) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 
         if (pools[minAddress][maxAddress] != address(0)) {
