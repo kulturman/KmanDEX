@@ -52,8 +52,9 @@ contract KmanDEXPool is KmanDEXPoolInterface {
             shares[realSender] = INITIAL_SHARES;
             require(minimumShares <= INITIAL_SHARES, MinimumSharesNotMet(minimumShares, INITIAL_SHARES));
         } else {
-            uint256 sharesToMint =
-                Math.min((amountTokenA * localTotalShares) / tokenAAmount, (amountTokenB * localTotalShares) / tokenBAmount);
+            uint256 sharesToMint = Math.min(
+                (amountTokenA * localTotalShares) / tokenAAmount, (amountTokenB * localTotalShares) / tokenBAmount
+            );
             require(minimumShares <= sharesToMint, MinimumSharesNotMet(minimumShares, sharesToMint));
             shares[realSender] += sharesToMint;
             localTotalShares += sharesToMint;
@@ -71,13 +72,20 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     }
 
     function withdrawLiquidity(address realSender, uint256 sharesToBurn) external onlyRouter {
-        require(shares[realSender] >= sharesToBurn, NotEnoughShares(shares[realSender], sharesToBurn));
+        require(
+            shares[realSender] >= sharesToBurn && sharesToBurn > 0, NotEnoughShares(shares[realSender], sharesToBurn)
+        );
         shares[realSender] -= sharesToBurn;
         uint256 localTotalShares = totalShares;
 
+        uint256 amountTokenA = (sharesToBurn * tokenAAmount);
+        uint256 amountTokenB = (sharesToBurn * tokenBAmount);
 
-    uint256 amountTokenA = (sharesToBurn * tokenAAmount) / localTotalShares;
-        uint256 amountTokenB = (sharesToBurn * tokenBAmount) / localTotalShares;
+        // We can safely divide by localTotalShares here because we already checked that sharesToBurn <= totalShares and sharesToBurn > 0
+        assembly {
+            amountTokenA := div(amountTokenA, localTotalShares)
+            amountTokenB := div(amountTokenB, localTotalShares)
+        }
 
         localTotalShares -= sharesToBurn;
         tokenAAmount -= amountTokenA;
@@ -110,35 +118,39 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         return _swap(realSender, tokenIn, tokenOut, amountIn, minTokenOut);
     }
 
-    function _swap(
-        address realSender,
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn,
-        uint256 minTokenOut
-    ) internal returns (uint256) {
-        uint256 fee = amountIn / FEE_RATE;
+    // I avoided using cache variables here because it triggered a stack too deep error and the logic is simple enough to not require it.
+
+    function _swap(address realSender, address tokenIn, address tokenOut, uint256 amountIn, uint256 minTokenOut)
+        internal
+        returns (uint256)
+    {
+        uint256 fee = amountIn;
+
+        assembly {
+            fee := div(fee, FEE_RATE)
+        }
+
         uint256 amountInAfterFee = amountIn - fee;
 
-        // Cache storage variables locally
-        uint256 localTokenAAmount = tokenAAmount;
-        uint256 localTokenBAmount = tokenBAmount;
-
-        bool isAToB = tokenIn == tokenA;
-        uint256 tokenInAmount = isAToB ? localTokenAAmount : localTokenBAmount;
-        uint256 tokenOutAmount = isAToB ? localTokenBAmount : localTokenAAmount;
+        uint256 tokenInAmount = tokenIn == tokenA ? tokenAAmount : tokenBAmount;
+        uint256 tokenOutAmount = tokenOut == tokenA ? tokenAAmount : tokenBAmount;
 
         uint256 newTokenInAmount = tokenInAmount + amountInAfterFee;
-        uint256 newTokenOutAmount = invariant / newTokenInAmount;
+        uint256 newTokenOutAmount = invariant;
+
+        assembly {
+            newTokenOutAmount := div(newTokenOutAmount, newTokenInAmount)
+        }
+
         uint256 amountOut = tokenOutAmount - newTokenOutAmount;
 
         require(amountOut >= minTokenOut && amountOut <= tokenOutAmount, MinimumAmountNotMet(minTokenOut, amountOut));
 
-        if (isAToB) {
-            tokenAAmount = localTokenAAmount + amountIn;
+        if (tokenIn == tokenA) {
+            tokenAAmount += amountIn;
             tokenBAmount = newTokenOutAmount;
         } else {
-            tokenBAmount = localTokenBAmount + amountIn;
+            tokenBAmount += amountIn;
             tokenAAmount = newTokenOutAmount;
         }
 
@@ -149,8 +161,6 @@ contract KmanDEXPool is KmanDEXPoolInterface {
 
         return amountOut;
     }
-
-
 
     function swapWithUniswap(
         address realSender,

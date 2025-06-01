@@ -50,7 +50,6 @@ contract KmanDEXRouter {
         KmanDEXPoolInterface(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
 
         if (!isLiquidityProvider[msg.sender]) {
-            console.log("Adding liquidity provider:", msg.sender);
             isLiquidityProvider[msg.sender] = true;
             liquidityProviders.push(msg.sender);
         }
@@ -62,10 +61,7 @@ contract KmanDEXRouter {
         KmanDEXPoolInterface(pool).withdrawLiquidity(msg.sender, sharesToBurn);
     }
 
-    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut)
-        external
-        returns (uint256)
-    {
+    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external returns (uint256) {
         address pool = FactoryInterface(factory).getPoolAddress(tokenIn, tokenOut);
 
         if (pool == address(0)) {
