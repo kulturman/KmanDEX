@@ -86,9 +86,7 @@ contract KmanDEXPool is KmanDEXPoolInterface {
     function withdrawLiquidity(address realSender, uint256 sharesToBurn) external onlyRouter {
         uint256 realSenderShares = shares[realSender];
 
-        require(
-            realSenderShares >= sharesToBurn && sharesToBurn > 0, NotEnoughShares(realSenderShares, sharesToBurn)
-        );
+        require(realSenderShares >= sharesToBurn && sharesToBurn > 0, NotEnoughShares(realSenderShares, sharesToBurn));
         shares[realSender] -= sharesToBurn;
 
         uint256 localTotalShares = totalShares;
