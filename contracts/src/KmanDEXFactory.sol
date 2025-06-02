@@ -3,16 +3,24 @@ pragma solidity 0.8.28;
 
 import "./interfaces/FactoryInterface.sol";
 import {KmanDEXPool, KmanDEXPoolInterface} from "./KmanDEXPool.sol";
+import {console} from "../lib/forge-std/src/console.sol";
+import {Clones} from "../lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
 
 contract KmanDEXFactory is FactoryInterface {
+    using Clones for address;
+
     address public contractOwner;
     address public router;
     mapping(address => mapping(address => address)) private pools;
     address[] public allPools;
 
+    address public mainPool;
+
     constructor() {
         contractOwner = msg.sender;
         router = msg.sender;
+
+        mainPool = address(new KmanDEXPool(contractOwner, address(this), router, address(0), address(0)));
     }
 
     function getPoolAddress(address tokenA, address tokenB) external view returns (address) {
@@ -25,20 +33,23 @@ contract KmanDEXFactory is FactoryInterface {
         require(tokenA != address(0) && tokenB != address(0), InvalidAddress());
         require(tokenA != tokenB, IdenticalPoolAddresses(tokenA));
 
-        KmanDEXPool newPool = new KmanDEXPool(contractOwner, address(this), router, tokenA, tokenB);
-
         (address minAddress, address maxAddress) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 
         if (pools[minAddress][maxAddress] != address(0)) {
             revert PoolAlreadyExists(tokenA, tokenB);
         }
 
-        pools[minAddress][maxAddress] = address(newPool);
-        allPools.push(address(newPool));
+        //Using this approach to save gas on pool creation, createPool function average cost went from 1M+ to 252K
+        address newPool = mainPool.clone();
 
-        emit PoolCreated(minAddress, maxAddress, address(newPool));
+        pools[minAddress][maxAddress] = newPool;
+        allPools.push(newPool);
 
-        return address(newPool);
+        KmanDEXPoolInterface(newPool).initialize(contractOwner, address(this), router, tokenA, tokenB);
+
+        emit PoolCreated(minAddress, maxAddress, newPool);
+
+        return newPool;
     }
 
     function getAllPools() external view returns (address[] memory) {

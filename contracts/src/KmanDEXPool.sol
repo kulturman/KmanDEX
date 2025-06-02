@@ -33,6 +33,18 @@ contract KmanDEXPool is KmanDEXPoolInterface {
         tokenB = tokenB_;
     }
 
+    function initialize(address contractOwner_, address factory_, address router_, address tokenA_, address tokenB_)
+        external
+    {
+        require(msg.sender == factory_, CallFromAnotherAddressThanFactory(msg.sender));
+        require(factory == address(0), AlreadyInitialized());
+        contactOwner = contractOwner_;
+        factory = factory_;
+        router = router_;
+        tokenA = tokenA_;
+        tokenB = tokenB_;
+    }
+
     modifier onlyRouter() {
         require(msg.sender == router, CallFromAnotherAddressThanRouter(msg.sender));
         _;
