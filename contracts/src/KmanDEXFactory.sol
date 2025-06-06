@@ -22,17 +22,11 @@ contract KmanDEXFactory is IKmanDEXFactory {
         mainPool = address(new KmanDEXPool(contractOwner, address(this), router, address(0), address(0)));
     }
 
-    function getPoolAddress(address tokenA, address tokenB) external view returns (address) {
-        (address minAddress, address maxAddress) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-
-        return pools[minAddress][maxAddress];
-    }
-
     function createPool(address tokenA, address tokenB) external returns (address) {
         require(tokenA != address(0) && tokenB != address(0), InvalidAddress());
         require(tokenA != tokenB, IdenticalPoolAddresses(tokenA));
 
-        (address minAddress, address maxAddress) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        (address minAddress, address maxAddress) = getOrderedAddresses(tokenA, tokenB);
 
         if (pools[minAddress][maxAddress] != address(0)) {
             revert PoolAlreadyExists(tokenA, tokenB);
@@ -53,5 +47,17 @@ contract KmanDEXFactory is IKmanDEXFactory {
 
     function getAllPools() external view returns (address[] memory) {
         return allPools;
+    }
+
+    function getPoolAddress(address tokenA, address tokenB) external view returns (address) {
+        (address minAddress, address maxAddress) = getOrderedAddresses(tokenA, tokenB);
+
+        return pools[minAddress][maxAddress];
+    }
+
+    function getOrderedAddresses(address adr1, address adr2) internal view returns (address, address) {
+        (address minAddress, address maxAddress) = adr1 < adr2 ? (adr1, adr2) : (adr2, adr1);
+
+        return (minAddress, maxAddress);
     }
 }
