@@ -11,15 +11,11 @@ contract KmanDEXRouter is IKmanDEXRouter {
     using SafeERC20 for IERC20;
 
     address public immutable factory;
-    address public immutable uniswapRouter;
-    address public immutable feeCollector; //Contract owner
     mapping(address => bool) public isLiquidityProvider;
     address[] public liquidityProviders;
 
-    constructor(address _uniRouter, address _collector) {
+    constructor() {
         factory = address(new KmanDEXFactory());
-        uniswapRouter = _uniRouter;
-        feeCollector = _collector;
     }
 
     function investLiquidity(

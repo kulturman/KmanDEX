@@ -10,7 +10,6 @@ import {IERC20} from "../lib/forge-std/src/interfaces/IERC20.sol";
 
 contract KmanDEXRouterTest is Test {
     KmanDEXFactory public factory;
-    address public uniswapRouter;
     address public feeCollector;
     address public USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
     address public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH
@@ -18,11 +17,10 @@ contract KmanDEXRouterTest is Test {
 
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("main_net"), 22476889);
-        router = new KmanDEXRouter(uniswapRouter, feeCollector);
+        router = new KmanDEXRouter();
         factory = KmanDEXFactory(router.factory());
         deal(USDC, address(router), 20_000);
         deal(WETH, address(router), 10_000);
-        uniswapRouter = address(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
         feeCollector = address(0x300);
     }
 
