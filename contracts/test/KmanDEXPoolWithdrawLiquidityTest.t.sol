@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.10;
 
-import "../src/KmanDEXPool.sol";
+import {IKmanDEXPool, KmanDEXPool} from "../src/KmanDEXPool.sol";
 import {Test} from "../lib/forge-std/src/Test.sol";
-import "./ERC20Mock.sol";
+import {ERC20Mock} from "./ERC20Mock.sol";
 
 contract KmanDEXPoolWithdrawLiquidityTest is Test {
     KmanDEXPool public kmanDEXPool;
@@ -22,7 +22,7 @@ contract KmanDEXPoolWithdrawLiquidityTest is Test {
     }
 
     function testWithdrawFailsWhenUserDoesNotEnoughShares() public {
-        vm.expectRevert(abi.encodeWithSelector(KmanDEXPoolInterface.NotEnoughShares.selector, 0, 2000));
+        vm.expectRevert(abi.encodeWithSelector(IKmanDEXPool.NotEnoughShares.selector, 0, 2000));
         kmanDEXPool.withdrawLiquidity(address(this), 2000);
     }
 
@@ -31,7 +31,7 @@ contract KmanDEXPoolWithdrawLiquidityTest is Test {
         kmanDEXPool.investLiquidity(address(this), 10000, 5000, 1);
 
         vm.expectEmit();
-        emit KmanDEXPoolInterface.LiquidityRemoved(contractAddress, 500, 5000, 2500);
+        emit IKmanDEXPool.LiquidityRemoved(contractAddress, 500, 5000, 2500);
         kmanDEXPool.withdrawLiquidity(address(this), 500);
 
         assertEq(kmanDEXPool.shares(contractAddress), 500, "Shares should be 500");

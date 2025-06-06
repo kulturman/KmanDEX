@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import "../src/KmanDEXRouter.sol";
+import {IKmanDEXRouter, KmanDEXRouter} from "../src/KmanDEXRouter.sol";
+import {IKmanDEXFactory, KmanDEXFactory} from "../src/KmanDEXFactory.sol";
+import {KmanDEXPool, IKmanDEXPool} from "../src/KmanDEXPool.sol";
 import {Test} from "../lib/forge-std/src/Test.sol";
 import {ERC20Mock} from "./ERC20Mock.sol";
+import {IERC20} from "../lib/forge-std/src/interfaces/IERC20.sol";
 
 contract KmanDEXRouterTest is Test {
     KmanDEXFactory public factory;
@@ -31,12 +34,12 @@ contract KmanDEXRouterTest is Test {
         IERC20(USDC).approve(pool, type(uint256).max);
         IERC20(WETH).approve(pool, type(uint256).max);
 
-        KmanDEXPoolInterface(pool).investLiquidity(address(router), 10_000, 5_000, 1);
+        IKmanDEXPool(pool).investLiquidity(address(router), 10_000, 5_000, 1);
         IERC20(USDC).approve(address(router), 1_000);
 
-        vm.expectCall(pool, abi.encodeWithSelector(KmanDEXPoolInterface.swap.selector, address(router), USDC, 1_000, 1));
+        vm.expectCall(pool, abi.encodeWithSelector(IKmanDEXPool.swap.selector, address(router), USDC, 1_000, 1));
         vm.expectEmit();
-        emit KmanDEXRouter.SuccessfulSwap(address(router), USDC, WETH, 1_000, 454);
+        emit IKmanDEXRouter.SuccessfulSwap(address(router), USDC, WETH, 1_000, 454);
 
         /*
             Just like when we called the pool directly, testing just one case is enough, we don't really need because we checked
@@ -68,7 +71,7 @@ contract KmanDEXRouterTest is Test {
 
         vm.expectCall(
             address(pool),
-            abi.encodeWithSelector(KmanDEXPoolInterface.investLiquidity.selector, address(router), 10000, 5000, 1)
+            abi.encodeWithSelector(IKmanDEXPool.investLiquidity.selector, address(router), 10000, 5000, 1)
         );
 
         router.investLiquidity(USDC, WETH, 10000, 5000, 1);
@@ -84,7 +87,7 @@ contract KmanDEXRouterTest is Test {
         router.investLiquidity(USDC, WETH, 10000, 5000, 1);
 
         vm.expectCall(
-            address(pool), abi.encodeWithSelector(KmanDEXPoolInterface.withdrawLiquidity.selector, address(router), 1)
+            address(pool), abi.encodeWithSelector(IKmanDEXPool.withdrawLiquidity.selector, address(router), 1)
         );
 
         router.withdrawLiquidity(USDC, WETH, 1);
@@ -95,7 +98,7 @@ contract KmanDEXRouterTest is Test {
         IERC20(USDC).approve(address(router), 1_000);
 
         uint256 amountOut = router.swap(address(USDC), address(WETH), 1_000, 1);
-        address pool = FactoryInterface(factory).getPoolAddress(USDC, WETH);
+        address pool = IKmanDEXFactory(factory).getPoolAddress(USDC, WETH);
 
         assertNotEq(pool, address(0));
         assertGt(amountOut, 0);

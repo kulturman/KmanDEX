@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "./interfaces/FactoryInterface.sol";
-import {KmanDEXPool, KmanDEXPoolInterface} from "./KmanDEXPool.sol";
-import {console} from "../lib/forge-std/src/console.sol";
+import {IKmanDEXFactory} from "./interfaces/IKmanDEXFactory.sol";
+import {KmanDEXPool, IKmanDEXPool} from "./KmanDEXPool.sol";
 import {Clones} from "../lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
 
-contract KmanDEXFactory is FactoryInterface {
+contract KmanDEXFactory is IKmanDEXFactory {
     using Clones for address;
 
     address public contractOwner;
@@ -45,7 +44,7 @@ contract KmanDEXFactory is FactoryInterface {
         pools[minAddress][maxAddress] = newPool;
         allPools.push(newPool);
 
-        KmanDEXPoolInterface(newPool).initialize(contractOwner, address(this), router, tokenA, tokenB);
+        IKmanDEXPool(newPool).initialize(contractOwner, address(this), router, tokenA, tokenB);
 
         emit PoolCreated(minAddress, maxAddress, newPool);
 

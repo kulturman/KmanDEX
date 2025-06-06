@@ -2,9 +2,10 @@
 pragma solidity ^0.8.10;
 
 import "../lib/forge-std/src/Test.sol";
-import "../src/KmanDEXPool.sol";
+import {KmanDEXPool, IKmanDEXPool} from "../src/KmanDEXPool.sol";
 import {Test} from "../lib/forge-std/src/Test.sol";
-import "./ERC20Mock.sol";
+import {ERC20Mock} from "./ERC20Mock.sol";
+import {IERC20} from "../lib/forge-std/src/interfaces/IERC20.sol";
 
 contract KmanDEXSwapWithUniswapTest is Test {
     KmanDEXPool public kmanDEXPool;

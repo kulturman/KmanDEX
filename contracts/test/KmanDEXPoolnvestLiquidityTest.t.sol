@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.10;
 
-import "../src/KmanDEXPool.sol";
-import "./ERC20Mock.sol";
+import {IKmanDEXPool, KmanDEXPool} from "../src/KmanDEXPool.sol";
+import {ERC20Mock} from "./ERC20Mock.sol";
 import {Test} from "../lib/forge-std/src/Test.sol";
 import {KmanDEXRouter} from "../src/KmanDEXRouter.sol";
 
@@ -25,7 +25,7 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
 
     function testInvestLiquidityWithEmptyPool() public {
         vm.expectEmit();
-        emit KmanDEXPoolInterface.LiquidityAdded(contractAddress, 10000, 5000);
+        emit IKmanDEXPool.LiquidityAdded(contractAddress, 10000, 5000);
         kmanDEXPool.investLiquidity(address(this), 10000, 5000, 1);
 
         assertEq(kmanDEXPool.totalShares(), kmanDEXPool.INITIAL_SHARES(), "Total shares should be 1000");
@@ -41,13 +41,13 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     }
 
     function testRevertsWhenMinimumSharesNotMetOnEmptyPool() public {
-        vm.expectRevert(abi.encodeWithSelector(KmanDEXPoolInterface.MinimumSharesNotMet.selector, 2000, 1000));
+        vm.expectRevert(abi.encodeWithSelector(IKmanDEXPool.MinimumSharesNotMet.selector, 2000, 1000));
         kmanDEXPool.investLiquidity(address(this), 10000, 5000, 2000);
     }
 
     function testRevertsWhenMinimumSharesNotMetOnNonEmptyPool() public {
         kmanDEXPool.investLiquidity(address(this), 10000, 5000, 1);
-        vm.expectRevert(abi.encodeWithSelector(KmanDEXPoolInterface.MinimumSharesNotMet.selector, 2000, 1000));
+        vm.expectRevert(abi.encodeWithSelector(IKmanDEXPool.MinimumSharesNotMet.selector, 2000, 1000));
         kmanDEXPool.investLiquidity(address(this), 10000, 5000, 2000);
     }
 

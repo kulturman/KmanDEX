@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-interface KmanDEXPoolInterface {
+interface IKmanDEXPool {
+    event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
+    event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
+
     error InvalidAddress();
     error InvalidAmount();
     error NotEnoughShares(uint256 actualShares, uint256 sharesToBurn);
@@ -10,9 +13,6 @@ interface KmanDEXPoolInterface {
     error CallFromAnotherAddressThanRouter(address sender);
     error CallFromAnotherAddressThanFactory(address sender);
     error AlreadyInitialized();
-
-    event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
-    event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
 
     function investLiquidity(address realSender, uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares)
         external;

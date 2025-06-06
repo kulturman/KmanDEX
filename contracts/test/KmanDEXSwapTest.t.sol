@@ -2,8 +2,8 @@
 pragma solidity ^0.8.10;
 
 import {Test} from "../lib/forge-std/src/Test.sol";
-import "../src/KmanDEXPool.sol";
-import "./ERC20Mock.sol";
+import {KmanDEXPool, IKmanDEXPool} from "../src/KmanDEXPool.sol";
+import {ERC20Mock} from "./ERC20Mock.sol";
 
 contract KmanDEXSwapTest is Test {
     KmanDEXPool public kmanDEXPool;
@@ -27,7 +27,7 @@ contract KmanDEXSwapTest is Test {
         kmanDEXPool.investLiquidity(address(this), 10_000, 5_000, 1);
         uint256 amountIn = 1_000;
 
-        vm.expectRevert(abi.encodeWithSelector(KmanDEXPoolInterface.MinimumAmountNotMet.selector, 1000, 454));
+        vm.expectRevert(abi.encodeWithSelector(IKmanDEXPool.MinimumAmountNotMet.selector, 1000, 454));
         kmanDEXPool.swap(address(this), address(tokenA), amountIn, 1000);
     }
 

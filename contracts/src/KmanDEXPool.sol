@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "./interfaces/KmanDEXPoolInterface.sol";
+import {IKmanDEXPool} from "./interfaces/IKmanDEXPool.sol";
 import {IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 import {Math} from "../lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
 
-contract KmanDEXPool is KmanDEXPoolInterface {
+contract KmanDEXPool is IKmanDEXPool {
     address public contactOwner;
     address private factory;
     address private router;
