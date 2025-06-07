@@ -38,7 +38,7 @@ contract KmanDEXPool is IKmanDEXPool {
     function initialize(address contractOwner_, address factory_, address router_, address tokenA_, address tokenB_)
         external
     {
-         require(msg.sender == factory_, CallFromAnotherAddressThanFactory(msg.sender));
+        require(msg.sender == factory_, CallFromAnotherAddressThanFactory(msg.sender));
         require(factory == address(0), AlreadyInitialized());
         contractOwner = contractOwner_;
         factory = factory_;

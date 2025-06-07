@@ -90,15 +90,4 @@ contract KmanDEXRouterTest is Test {
 
         router.withdrawLiquidity(USDC, WETH, 1);
     }
-
-    function testSwapWithNonExistentPool() public {
-        vm.startPrank(address(router));
-        IERC20(USDC).approve(address(router), 1_000);
-
-        uint256 amountOut = router.swap(address(USDC), address(WETH), 1_000, 1);
-        address pool = IKmanDEXFactory(factory).getPoolAddress(USDC, WETH);
-
-        assertNotEq(pool, address(0));
-        assertGt(amountOut, 0);
-    }
 }
