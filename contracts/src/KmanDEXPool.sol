@@ -74,9 +74,6 @@ contract KmanDEXPool is IKmanDEXPool {
         tokenBAmount += amountTokenB;
         invariant = tokenAAmount * tokenBAmount;
 
-        require(IERC20(tokenA).transferFrom(router, address(this), amountTokenA));
-        require(IERC20(tokenB).transferFrom(router, address(this), amountTokenB));
-
         emit LiquidityAdded(realSender, amountTokenA, amountTokenB);
     }
 

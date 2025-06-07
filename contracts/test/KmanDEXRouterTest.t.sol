@@ -29,10 +29,10 @@ contract KmanDEXRouterTest is Test {
         vm.startPrank(address(router));
         address pool = factory.createPool(USDC, WETH);
         //Authorize investment in pool
-        IERC20(USDC).approve(pool, type(uint256).max);
-        IERC20(WETH).approve(pool, type(uint256).max);
+        IERC20(USDC).approve(address(router), type(uint256).max);
+        IERC20(WETH).approve(address(router), type(uint256).max);
 
-        IKmanDEXPool(pool).investLiquidity(address(router), 10_000, 5_000, 1);
+        router.investLiquidity(USDC, WETH, 10_000, 5_000, 1);
         IERC20(USDC).approve(address(router), 1_000);
 
         vm.expectCall(pool, abi.encodeWithSelector(IKmanDEXPool.swap.selector, address(router), USDC, 1_000, 1));

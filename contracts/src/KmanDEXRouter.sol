@@ -38,12 +38,8 @@ contract KmanDEXRouter is IKmanDEXRouter {
             pool = IKmanDEXFactory(factory).createPool(tokenA, tokenB);
         }
 
-        //IERC20(tokenA).transferFrom(msg.sender, pool, amountTokenA);
-        //IERC20(tokenB).transferFrom(msg.sender, pool, amountTokenB);
-        IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA);
-        IERC20(tokenB).transferFrom(msg.sender, address(this), amountTokenB);
-        IERC20(tokenA).approve(pool, amountTokenA);
-        IERC20(tokenB).approve(pool, amountTokenB);
+        IERC20(tokenA).transferFrom(msg.sender, pool, amountTokenA);
+        IERC20(tokenB).transferFrom(msg.sender, pool, amountTokenB);
 
         IKmanDEXPool(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
 
