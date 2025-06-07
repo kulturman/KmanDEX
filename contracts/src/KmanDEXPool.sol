@@ -73,8 +73,6 @@ contract KmanDEXPool is IKmanDEXPool {
         tokenAAmount += amountTokenA;
         tokenBAmount += amountTokenB;
         invariant = tokenAAmount * tokenBAmount;
-
-        emit LiquidityAdded(realSender, amountTokenA, amountTokenB);
     }
 
     function withdrawLiquidity(address realSender, uint256 sharesToBurn) external onlyRouter {

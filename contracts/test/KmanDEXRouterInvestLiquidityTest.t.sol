@@ -4,7 +4,7 @@ pragma solidity ^0.8.10;
 import {IKmanDEXPool, KmanDEXPool} from "../src/KmanDEXPool.sol";
 import {ERC20Mock} from "./ERC20Mock.sol";
 import {Test} from "../lib/forge-std/src/Test.sol";
-import {KmanDEXRouter} from "../src/KmanDEXRouter.sol";
+import {KmanDEXRouter, IKmanDEXRouter} from "../src/KmanDEXRouter.sol";
 import {IKmanDEXFactory} from "../src/KmanDEXFactory.sol";
 
 contract KmanDEXPoolInvestLiquidityTest is Test {
@@ -29,8 +29,7 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
 
     function testInvestLiquidityWithEmptyPool() public {
         vm.expectEmit();
-        emit IKmanDEXPool.LiquidityAdded(contractAddress, 10000, 5000);
-        //kmanDEXPool.investLiquidity(address(this), 10000, 5000, 1);
+        emit IKmanDEXRouter.LiquidityAdded(contractAddress, 10000, 5000);
         router.investLiquidity(address(tokenA), address(tokenB), 10000, 5000, 0);
 
         assertEq(kmanDEXPool.totalShares(), kmanDEXPool.INITIAL_SHARES(), "Total shares should be 1000");

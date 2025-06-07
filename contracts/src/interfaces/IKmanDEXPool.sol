@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 interface IKmanDEXPool {
-    event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
     event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
 
     error InvalidAddress();

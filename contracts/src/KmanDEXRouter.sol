@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import "../lib/forge-std/src/console.sol";
 import {IKmanDEXPool} from "./KmanDEXPool.sol";
 import {IKmanDEXRouter} from "./interfaces/IKmanDEXRouter.sol";
 import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
@@ -42,6 +41,8 @@ contract KmanDEXRouter is IKmanDEXRouter {
         IERC20(tokenB).transferFrom(msg.sender, pool, amountTokenB);
 
         IKmanDEXPool(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
+
+        emit LiquidityAdded(msg.sender, amountTokenA, amountTokenB);
 
         if (!isLiquidityProvider[msg.sender]) {
             isLiquidityProvider[msg.sender] = true;

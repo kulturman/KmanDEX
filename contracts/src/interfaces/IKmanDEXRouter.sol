@@ -6,7 +6,6 @@ interface IKmanDEXRouter {
         address indexed user, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut
     );
     event LiquidityAdded(address indexed provider, uint256 amountTokenA, uint256 amountTokenB);
-    event LiquidityRemoved(address indexed provider, uint256 sharesBurned, uint256 amountTokenA, uint256 amountTokenB);
 
     error PoolDoesNotExist(address tokenA, address tokenB);
 
