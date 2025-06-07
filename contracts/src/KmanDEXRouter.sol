@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {IKmanDEXRouter} from "./interfaces/IKmanDEXRouter.sol";
+import "../lib/forge-std/src/console.sol";
 import {IKmanDEXPool} from "./KmanDEXPool.sol";
+import {IKmanDEXRouter} from "./interfaces/IKmanDEXRouter.sol";
 import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 import {KmanDEXFactory, IKmanDEXFactory} from "../src/KmanDEXFactory.sol";
 import {SafeERC20, IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -10,12 +11,18 @@ import {SafeERC20, IERC20} from "../lib/openzeppelin-contracts/contracts/token/E
 contract KmanDEXRouter is IKmanDEXRouter {
     using SafeERC20 for IERC20;
 
+    address public constant UNISWAP_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
     address public immutable factory;
-    mapping(address => bool) public isLiquidityProvider;
+    address public contractOwner;
     address[] public liquidityProviders;
+
+    uint256 public constant UNISWAP_ROUTING_FEE = 1000;
+
+    mapping(address => bool) public isLiquidityProvider;
 
     constructor() {
         factory = address(new KmanDEXFactory());
+        contractOwner = msg.sender;
     }
 
     function investLiquidity(
@@ -56,8 +63,7 @@ contract KmanDEXRouter is IKmanDEXRouter {
         address pool = IKmanDEXFactory(factory).getPoolAddress(tokenIn, tokenOut);
 
         if (pool == address(0)) {
-            pool = IKmanDEXFactory(factory).createPool(tokenIn, tokenOut);
-            require(pool != address(0), PoolDoesNotExist(tokenIn, tokenOut));
+            return _forwardToUniswap(msg.sender, tokenIn, tokenOut, amountIn, minOut);
         }
 
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
@@ -67,6 +73,34 @@ contract KmanDEXRouter is IKmanDEXRouter {
         emit SuccessfulSwap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
 
         return amountOut;
+    }
+
+    function _forwardToUniswap(
+        address realSender,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minTokenOut
+    ) private returns (uint256) {
+        address[] memory paths = new address[](2);
+        paths[0] = tokenIn;
+        paths[1] = tokenOut;
+
+        uint256 fees = amountIn / UNISWAP_ROUTING_FEE;
+        uint256 amountInMinusFees = amountIn - fees;
+
+        IERC20(tokenIn).transferFrom(realSender, address(this), amountIn);
+        IERC20(tokenIn).approve(UNISWAP_ROUTER, amountInMinusFees);
+
+        if (fees > 0) {
+            IERC20(tokenIn).transfer(contractOwner, fees);
+        }
+
+        uint256[] memory amounts = IUniswapV2Router(UNISWAP_ROUTER).swapExactTokensForTokens(
+            amountInMinusFees, minTokenOut, paths, realSender, block.timestamp
+        );
+
+        return amounts[1];
     }
 
     function getLiquidityProviders() external view returns (address[] memory) {

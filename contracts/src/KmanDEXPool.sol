@@ -7,38 +7,23 @@ import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 import {Math} from "../lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 contract KmanDEXPool is IKmanDEXPool {
-    address public contactOwner;
+    address public contractOwner;
     address private factory;
     address private router;
     address public tokenA;
     address public tokenB;
-    address public constant UNISWAP_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     uint256 public totalShares;
-    mapping(address => uint256) public shares;
     uint256 public invariant;
-
     uint256 public constant INITIAL_SHARES = 1000;
     uint256 public constant FEE_RATE = 500;
-    uint256 public constant UNISWAP_ROUTING_FEE = 1000;
-
     uint256 public tokenAAmount;
     uint256 public tokenBAmount;
 
-    constructor(address contractOwner_, address factory_, address router_, address tokenA_, address tokenB_) {
-        contactOwner = contractOwner_;
-        factory = factory_;
-        router = router_;
-        tokenA = tokenA_;
-        tokenB = tokenB_;
-    }
+    mapping(address => uint256) public shares;
 
-    function initialize(address contractOwner_, address factory_, address router_, address tokenA_, address tokenB_)
-        external
-    {
-        require(msg.sender == factory_, CallFromAnotherAddressThanFactory(msg.sender));
-        require(factory == address(0), AlreadyInitialized());
-        contactOwner = contractOwner_;
+    constructor(address contractOwner_, address factory_, address router_, address tokenA_, address tokenB_) {
+        contractOwner = contractOwner_;
         factory = factory_;
         router = router_;
         tokenA = tokenA_;
@@ -48,6 +33,18 @@ contract KmanDEXPool is IKmanDEXPool {
     modifier onlyRouter() {
         require(msg.sender == router, CallFromAnotherAddressThanRouter(msg.sender));
         _;
+    }
+
+    function initialize(address contractOwner_, address factory_, address router_, address tokenA_, address tokenB_)
+        external
+    {
+         require(msg.sender == factory_, CallFromAnotherAddressThanFactory(msg.sender));
+        require(factory == address(0), AlreadyInitialized());
+        contractOwner = contractOwner_;
+        factory = factory_;
+        router = router_;
+        tokenA = tokenA_;
+        tokenB = tokenB_;
     }
 
     function investLiquidity(address realSender, uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares)
@@ -61,8 +58,8 @@ contract KmanDEXPool is IKmanDEXPool {
 
         if (localTotalShares == 0) {
             localTotalShares = INITIAL_SHARES;
-            shares[realSender] = INITIAL_SHARES;
-            require(minimumShares <= INITIAL_SHARES, MinimumSharesNotMet(minimumShares, INITIAL_SHARES));
+            shares[realSender] = localTotalShares;
+            require(minimumShares <= localTotalShares, MinimumSharesNotMet(minimumShares, localTotalShares));
         } else {
             uint256 sharesToMint = Math.min(
                 (amountTokenA * localTotalShares) / tokenAAmount, (amountTokenB * localTotalShares) / tokenBAmount
@@ -119,13 +116,8 @@ contract KmanDEXPool is IKmanDEXPool {
     {
         require(tokenIn == tokenA || tokenIn == tokenB, InvalidAddress());
         require(amountIn > 0, InvalidAmount());
-        require(minTokenOut > 0, InvalidAmount());
 
         address tokenOut = tokenIn == tokenA ? tokenB : tokenA;
-
-        if (tokenAAmount == 0 || tokenBAmount == 0) {
-            return swapWithUniswap(realSender, tokenIn, tokenOut, amountIn, minTokenOut);
-        }
 
         return _swap(realSender, tokenIn, tokenOut, amountIn, minTokenOut);
     }
@@ -133,7 +125,7 @@ contract KmanDEXPool is IKmanDEXPool {
     // I avoided using cache variables here because it triggered a stack too deep error and the logic is simple enough to not require it.
 
     function _swap(address realSender, address tokenIn, address tokenOut, uint256 amountIn, uint256 minTokenOut)
-        internal
+        private
         returns (uint256)
     {
         uint256 fee = amountIn;
@@ -156,7 +148,7 @@ contract KmanDEXPool is IKmanDEXPool {
 
         uint256 amountOut = tokenOutAmount - newTokenOutAmount;
 
-        require(amountOut >= minTokenOut && amountOut <= tokenOutAmount, MinimumAmountNotMet(minTokenOut, amountOut));
+        require(amountOut >= minTokenOut, MinimumAmountNotMet(minTokenOut, amountOut));
 
         if (tokenIn == tokenA) {
             tokenAAmount += amountIn;
@@ -172,33 +164,5 @@ contract KmanDEXPool is IKmanDEXPool {
         require(IERC20(tokenOut).transfer(realSender, amountOut));
 
         return amountOut;
-    }
-
-    function swapWithUniswap(
-        address realSender,
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn,
-        uint256 minTokenOut
-    ) internal returns (uint256) {
-        address[] memory paths = new address[](2);
-        paths[0] = tokenIn;
-        paths[1] = tokenOut;
-
-        uint256 fees = amountIn / UNISWAP_ROUTING_FEE;
-        uint256 amountInMinusFees = amountIn - fees;
-
-        IERC20(tokenIn).transferFrom(realSender, address(this), amountIn);
-        IERC20(tokenIn).approve(UNISWAP_ROUTER, amountInMinusFees);
-
-        if (fees > 0) {
-            IERC20(tokenIn).transfer(contactOwner, fees);
-        }
-
-        uint256[] memory amounts = IUniswapV2Router(UNISWAP_ROUTER).swapExactTokensForTokens(
-            amountInMinusFees, minTokenOut, paths, realSender, block.timestamp
-        );
-
-        return amounts[1];
     }
 }

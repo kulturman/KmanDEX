@@ -5,7 +5,7 @@ interface IKmanDEXFactory {
     event PoolCreated(address indexed tokenA, address indexed tokenB, address indexed pairAddress);
 
     error InvalidAddress();
-    error IdenticalPoolAddresses(address);
+    error IdenticalTokenAddresses(address);
     error PoolAlreadyExists(address, address);
 
     function getPoolAddress(address tokenA, address tokenB) external view returns (address);
