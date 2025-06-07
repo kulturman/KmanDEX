@@ -67,7 +67,6 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
 
         router.investLiquidity(address(tokenA), address(tokenB), 20_000, 10_000, 1);
 
-
         vm.startPrank(secondInvestor);
         tokenA.approve(address(router), type(uint256).max);
         tokenB.approve(address(router), type(uint256).max);
