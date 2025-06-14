@@ -6,7 +6,6 @@ import "../src/KmanDEXRouter.sol";
 
 contract DeployKmanDEXRouter is Script {
     address public constant UNISWAP_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-    address public constant FEE_COLLECTOR = 0x4D4E65554F0b7CEE2bB00155F55b10cEE1580c71;
 
     function run() external {
         // Load private key from .env or other source
@@ -14,7 +13,7 @@ contract DeployKmanDEXRouter is Script {
 
         vm.startBroadcast(privateKey);
 
-        KmanDEXRouter router = new KmanDEXRouter(UNISWAP_ROUTER, FEE_COLLECTOR);
+        KmanDEXRouter router = new KmanDEXRouter();
 
         console.log("KmanDEXRouter deployed at:", address(router));
         console.log("Factory deployed at:", address(router.factory()));

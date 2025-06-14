@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "../lib/forge-std/src/Test.sol";
-import "forge-std/console.sol";
-import {KmanDEXFactory, FactoryInterface} from "../src/KmanDEXFactory.sol";
+import {Test, Vm} from "../lib/forge-std/src/Test.sol";
+import {KmanDEXFactory, IKmanDEXFactory} from "../src/KmanDEXFactory.sol";
 
 contract KmanDEXFactoryTest is Test {
     KmanDEXFactory public kmanDEXFactory;
@@ -13,17 +12,17 @@ contract KmanDEXFactoryTest is Test {
     }
 
     function testCreatesPoolFailsWithFirstAddress0() public {
-        vm.expectRevert(abi.encodeWithSelector(FactoryInterface.InvalidAddress.selector));
+        vm.expectRevert(abi.encodeWithSelector(IKmanDEXFactory.InvalidAddress.selector));
         kmanDEXFactory.createPool(address(0), address(1));
     }
 
     function testCreatesPoolFailsWithFirstSecondAddress0() public {
-        vm.expectRevert(abi.encodeWithSelector(FactoryInterface.InvalidAddress.selector));
+        vm.expectRevert(abi.encodeWithSelector(IKmanDEXFactory.InvalidAddress.selector));
         kmanDEXFactory.createPool(address(1), address(0));
     }
 
     function testCreatesPoolFailsWithIdenticalAddresses() public {
-        vm.expectRevert(abi.encodeWithSelector(FactoryInterface.IdenticalPoolAddresses.selector, address(1)));
+        vm.expectRevert(abi.encodeWithSelector(IKmanDEXFactory.IdenticalTokenAddresses.selector, address(1)));
         kmanDEXFactory.createPool(address(1), address(1));
     }
 
@@ -33,7 +32,7 @@ contract KmanDEXFactoryTest is Test {
 
         kmanDEXFactory.createPool(tokenA, tokenB);
 
-        vm.expectRevert(abi.encodeWithSelector(FactoryInterface.PoolAlreadyExists.selector, tokenA, tokenB));
+        vm.expectRevert(abi.encodeWithSelector(IKmanDEXFactory.PoolAlreadyExists.selector, tokenA, tokenB));
         kmanDEXFactory.createPool(tokenA, tokenB);
     }
 

@@ -1,31 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../src/KmanDEXFactory.sol";
+import {IKmanDEXPool} from "./KmanDEXPool.sol";
+import {IKmanDEXRouter} from "./interfaces/IKmanDEXRouter.sol";
 import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
-import {console} from "../lib/forge-std/src/console.sol";
-import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import {KmanDEXFactory, IKmanDEXFactory} from "../src/KmanDEXFactory.sol";
+import {SafeERC20, IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract KmanDEXRouter is ReentrancyGuard {
+contract KmanDEXRouter is IKmanDEXRouter {
     using SafeERC20 for IERC20;
 
+    address public constant UNISWAP_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
     address public immutable factory;
-    address public immutable uniswapRouter;
-    address public immutable feeCollector; //Contract owner
-    mapping(address => bool) public isLiquidityProvider;
+    address public contractOwner;
     address[] public liquidityProviders;
 
-    error PoolDoesNotExist(address tokenA, address tokenB);
+    uint256 public constant UNISWAP_ROUTING_FEE = 1000;
 
-    event SuccessfulSwap(
-        address indexed user, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut
-    );
+    mapping(address => bool) public isLiquidityProvider;
 
-    constructor(address _uniRouter, address _collector) {
+    constructor() {
         factory = address(new KmanDEXFactory());
-        uniswapRouter = _uniRouter;
-        feeCollector = _collector;
+        contractOwner = msg.sender;
     }
 
     function investLiquidity(
@@ -34,54 +30,74 @@ contract KmanDEXRouter is ReentrancyGuard {
         uint256 amountTokenA,
         uint256 amountTokenB,
         uint256 minimumShares
-    ) external nonReentrant {
-        address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
+    ) external {
+        address pool = IKmanDEXFactory(factory).getPoolAddress(tokenA, tokenB);
 
         if (pool == address(0)) {
-            pool = FactoryInterface(factory).createPool(tokenA, tokenB);
+            pool = IKmanDEXFactory(factory).createPool(tokenA, tokenB);
         }
 
-        require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
+        IERC20(tokenA).transferFrom(msg.sender, pool, amountTokenA);
+        IERC20(tokenB).transferFrom(msg.sender, pool, amountTokenB);
 
-        IERC20(tokenA).transferFrom(msg.sender, address(this), amountTokenA);
-        IERC20(tokenB).transferFrom(msg.sender, address(this), amountTokenB);
-        IERC20(tokenA).approve(pool, amountTokenA);
-        IERC20(tokenB).approve(pool, amountTokenB);
+        IKmanDEXPool(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
 
-        KmanDEXPoolInterface(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
+        emit LiquidityAdded(msg.sender, amountTokenA, amountTokenB);
 
         if (!isLiquidityProvider[msg.sender]) {
-            console.log("Adding liquidity provider:", msg.sender);
             isLiquidityProvider[msg.sender] = true;
             liquidityProviders.push(msg.sender);
         }
     }
 
-    function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external nonReentrant {
-        address pool = FactoryInterface(factory).getPoolAddress(tokenA, tokenB);
+    function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external {
+        address pool = IKmanDEXFactory(factory).getPoolAddress(tokenA, tokenB);
         require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
-        KmanDEXPoolInterface(pool).withdrawLiquidity(msg.sender, sharesToBurn);
+        IKmanDEXPool(pool).withdrawLiquidity(msg.sender, sharesToBurn);
     }
 
-    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut)
-        external
-        nonReentrant
-        returns (uint256)
-    {
-        address pool = FactoryInterface(factory).getPoolAddress(tokenIn, tokenOut);
+    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external returns (uint256) {
+        address pool = IKmanDEXFactory(factory).getPoolAddress(tokenIn, tokenOut);
 
         if (pool == address(0)) {
-            pool = FactoryInterface(factory).createPool(tokenIn, tokenOut);
-            require(pool != address(0), PoolDoesNotExist(tokenIn, tokenOut));
+            return _forwardToUniswap(msg.sender, tokenIn, tokenOut, amountIn, minOut);
         }
 
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenIn).approve(pool, amountIn);
-        uint256 amountOut = KmanDEXPoolInterface(pool).swap(msg.sender, tokenIn, amountIn, minOut);
+        uint256 amountOut = IKmanDEXPool(pool).swap(msg.sender, tokenIn, amountIn, minOut);
 
         emit SuccessfulSwap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
 
         return amountOut;
+    }
+
+    function _forwardToUniswap(
+        address realSender,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minTokenOut
+    ) private returns (uint256) {
+        address[] memory paths = new address[](2);
+        paths[0] = tokenIn;
+        paths[1] = tokenOut;
+
+        uint256 fees = amountIn / UNISWAP_ROUTING_FEE;
+        uint256 amountInMinusFees = amountIn - fees;
+
+        IERC20(tokenIn).transferFrom(realSender, address(this), amountIn);
+        IERC20(tokenIn).approve(UNISWAP_ROUTER, amountInMinusFees);
+
+        if (fees > 0) {
+            IERC20(tokenIn).transfer(contractOwner, fees);
+        }
+
+        uint256[] memory amounts = IUniswapV2Router(UNISWAP_ROUTER).swapExactTokensForTokens(
+            amountInMinusFees, minTokenOut, paths, realSender, block.timestamp
+        );
+
+        return amounts[1];
     }
 
     function getLiquidityProviders() external view returns (address[] memory) {
@@ -89,6 +105,6 @@ contract KmanDEXRouter is ReentrancyGuard {
     }
 
     function getAllPools() external view returns (address[] memory) {
-        return FactoryInterface(factory).getAllPools();
+        return IKmanDEXFactory(factory).getAllPools();
     }
 }
