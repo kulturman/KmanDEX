@@ -1,0 +1,26 @@
+# Lefthook config — mirrors .github/workflows/test.yml so CI failures surface locally.
+# Install once per clone: `lefthook install`
+# Bypass (rare, for WIP commits): `git commit --no-verify` — but if you reach for this often, the hook is doing too much.
+
+pre-commit:
+  parallel: true
+  commands:
+    forge-fmt:
+      glob: "contracts/**/*.sol"
+      run: cd contracts && forge fmt --check
+      fail_text: "Solidity formatting failed. Run: cd contracts && forge fmt"
+
+    tsc:
+      glob: "backend/**/*.ts"
+      run: cd backend && npx tsc --noEmit
+      fail_text: "TypeScript type check failed."
+
+pre-push:
+  commands:
+    forge-build:
+      run: cd contracts && forge build --sizes
+      fail_text: "Solidity build failed."
+
+    forge-test:
+      run: cd contracts && forge test
+      fail_text: "Solidity tests failed."
