@@ -5,8 +5,9 @@ import {IKmanDEXPool} from "./interfaces/IKmanDEXPool.sol";
 import {IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 import {Math} from "../lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
-contract KmanDEXPool is IKmanDEXPool {
+contract KmanDEXPool is IKmanDEXPool, ReentrancyGuard {
     address public contractOwner;
     address private factory;
     address private router;
@@ -50,6 +51,7 @@ contract KmanDEXPool is IKmanDEXPool {
     function investLiquidity(address realSender, uint256 amountTokenA, uint256 amountTokenB, uint256 minimumShares)
         external
         onlyRouter
+        nonReentrant
     {
         require(amountTokenA > 0 && amountTokenB > 0, InvalidAmount());
         require(realSender != address(0), InvalidAddress());
@@ -75,7 +77,7 @@ contract KmanDEXPool is IKmanDEXPool {
         invariant = tokenAAmount * tokenBAmount;
     }
 
-    function withdrawLiquidity(address realSender, uint256 sharesToBurn) external onlyRouter {
+    function withdrawLiquidity(address realSender, uint256 sharesToBurn) external onlyRouter nonReentrant {
         uint256 realSenderShares = shares[realSender];
 
         require(realSenderShares >= sharesToBurn && sharesToBurn > 0, NotEnoughShares(realSenderShares, sharesToBurn));
@@ -106,7 +108,7 @@ contract KmanDEXPool is IKmanDEXPool {
 
     function swap(address realSender, address tokenIn, uint256 amountIn, uint256 minTokenOut)
         external
-        onlyRouter
+        onlyRouter nonReentrant
         returns (uint256)
     {
         require(tokenIn == tokenA || tokenIn == tokenB, InvalidAddress());

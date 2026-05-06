@@ -6,8 +6,9 @@ import {IKmanDEXRouter} from "./interfaces/IKmanDEXRouter.sol";
 import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 import {KmanDEXFactory, IKmanDEXFactory} from "../src/KmanDEXFactory.sol";
 import {SafeERC20, IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
-contract KmanDEXRouter is IKmanDEXRouter {
+contract KmanDEXRouter is IKmanDEXRouter, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address public constant UNISWAP_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
@@ -30,7 +31,7 @@ contract KmanDEXRouter is IKmanDEXRouter {
         uint256 amountTokenA,
         uint256 amountTokenB,
         uint256 minimumShares
-    ) external {
+    ) external nonReentrant {
         address pool = IKmanDEXFactory(factory).getPoolAddress(tokenA, tokenB);
 
         if (pool == address(0)) {
@@ -50,13 +51,13 @@ contract KmanDEXRouter is IKmanDEXRouter {
         }
     }
 
-    function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external {
+    function withdrawLiquidity(address tokenA, address tokenB, uint256 sharesToBurn) external nonReentrant {
         address pool = IKmanDEXFactory(factory).getPoolAddress(tokenA, tokenB);
         require(pool != address(0), PoolDoesNotExist(tokenA, tokenB));
         IKmanDEXPool(pool).withdrawLiquidity(msg.sender, sharesToBurn);
     }
 
-    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external returns (uint256) {
+    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external nonReentrant returns (uint256) {
         address pool = IKmanDEXFactory(factory).getPoolAddress(tokenIn, tokenOut);
 
         if (pool == address(0)) {
