@@ -57,7 +57,11 @@ contract KmanDEXRouter is IKmanDEXRouter, ReentrancyGuard {
         IKmanDEXPool(pool).withdrawLiquidity(msg.sender, sharesToBurn);
     }
 
-    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external nonReentrant returns (uint256) {
+    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut)
+        external
+        nonReentrant
+        returns (uint256)
+    {
         address pool = IKmanDEXFactory(factory).getPoolAddress(tokenIn, tokenOut);
 
         if (pool == address(0)) {

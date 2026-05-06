@@ -108,7 +108,8 @@ contract KmanDEXPool is IKmanDEXPool, ReentrancyGuard {
 
     function swap(address realSender, address tokenIn, uint256 amountIn, uint256 minTokenOut)
         external
-        onlyRouter nonReentrant
+        onlyRouter
+        nonReentrant
         returns (uint256)
     {
         require(tokenIn == tokenA || tokenIn == tokenB, InvalidAddress());
@@ -119,7 +120,7 @@ contract KmanDEXPool is IKmanDEXPool, ReentrancyGuard {
         return _swap(realSender, tokenIn, tokenOut, amountIn, minTokenOut);
     }
 
-    // I avoided using cache variables here because it triggered a stack too deep error and the logic is simple enough to not require it.
+    //I avoided using cache variables here because it triggered a stack too deep error and the logic is simple enough to not require it.
 
     function _swap(address realSender, address tokenIn, address tokenOut, uint256 amountIn, uint256 minTokenOut)
         private
