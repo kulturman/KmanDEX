@@ -6,6 +6,10 @@ via_ir = false
 optimizer = true
 optimizer_runs = 999999
 
+[profile.ci]
+# CI inherits everything from default. Defining the profile silences the
+# "profile `ci` does not exist" warning emitted by GitHub Actions runs.
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 
 [rpc_endpoints]
