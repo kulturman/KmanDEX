@@ -38,8 +38,8 @@ contract KmanDEXRouter is IKmanDEXRouter, ReentrancyGuard {
             pool = IKmanDEXFactory(factory).createPool(tokenA, tokenB);
         }
 
-        IERC20(tokenA).transferFrom(msg.sender, pool, amountTokenA);
-        IERC20(tokenB).transferFrom(msg.sender, pool, amountTokenB);
+        IERC20(tokenA).safeTransferFrom(msg.sender, pool, amountTokenA);
+        IERC20(tokenB).safeTransferFrom(msg.sender, pool, amountTokenB);
 
         IKmanDEXPool(pool).investLiquidity(msg.sender, amountTokenA, amountTokenB, minimumShares);
 
@@ -68,8 +68,8 @@ contract KmanDEXRouter is IKmanDEXRouter, ReentrancyGuard {
             return _forwardToUniswap(msg.sender, tokenIn, tokenOut, amountIn, minOut);
         }
 
-        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
-        IERC20(tokenIn).approve(pool, amountIn);
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).forceApprove(pool, amountIn);
         uint256 amountOut = IKmanDEXPool(pool).swap(msg.sender, tokenIn, amountIn, minOut);
 
         emit SuccessfulSwap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
@@ -91,11 +91,11 @@ contract KmanDEXRouter is IKmanDEXRouter, ReentrancyGuard {
         uint256 fees = amountIn / UNISWAP_ROUTING_FEE;
         uint256 amountInMinusFees = amountIn - fees;
 
-        IERC20(tokenIn).transferFrom(realSender, address(this), amountIn);
-        IERC20(tokenIn).approve(UNISWAP_ROUTER, amountInMinusFees);
+        IERC20(tokenIn).safeTransferFrom(realSender, address(this), amountIn);
+        IERC20(tokenIn).forceApprove(UNISWAP_ROUTER, amountInMinusFees);
 
         if (fees > 0) {
-            IERC20(tokenIn).transfer(contractOwner, fees);
+            IERC20(tokenIn).safeTransfer(contractOwner, fees);
         }
 
         uint256[] memory amounts = IUniswapV2Router(UNISWAP_ROUTER).swapExactTokensForTokens(

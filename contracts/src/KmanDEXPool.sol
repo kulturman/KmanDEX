@@ -2,12 +2,14 @@
 pragma solidity 0.8.28;
 
 import {IKmanDEXPool} from "./interfaces/IKmanDEXPool.sol";
-import {IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20, IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 import {Math} from "../lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
 contract KmanDEXPool is IKmanDEXPool, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
     address public contractOwner;
     address private factory;
     address private router;
@@ -100,8 +102,8 @@ contract KmanDEXPool is IKmanDEXPool, ReentrancyGuard {
 
         totalShares = localTotalShares;
 
-        require(IERC20(tokenA).transfer(realSender, amountTokenA));
-        require(IERC20(tokenB).transfer(realSender, amountTokenB));
+        IERC20(tokenA).safeTransfer(realSender, amountTokenA);
+        IERC20(tokenB).safeTransfer(realSender, amountTokenB);
 
         emit LiquidityRemoved(realSender, sharesToBurn, amountTokenA, amountTokenB);
     }
@@ -158,8 +160,8 @@ contract KmanDEXPool is IKmanDEXPool, ReentrancyGuard {
 
         invariant = tokenAAmount * tokenBAmount;
 
-        require(IERC20(tokenIn).transferFrom(router, address(this), amountIn));
-        require(IERC20(tokenOut).transfer(realSender, amountOut));
+        IERC20(tokenIn).safeTransferFrom(router, address(this), amountIn);
+        IERC20(tokenOut).safeTransfer(realSender, amountOut);
 
         return amountOut;
     }
