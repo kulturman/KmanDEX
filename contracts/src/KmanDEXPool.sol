@@ -18,7 +18,8 @@ contract KmanDEXPool is IKmanDEXPool, ReentrancyGuard {
 
     uint256 public totalShares;
     uint256 public invariant;
-    uint256 public constant INITIAL_SHARES = 1000;
+    uint256 public constant INITIAL_SHARES = 1e18;
+    uint256 public constant MINIMUM_LIQUIDITY = 1000;
     uint256 public constant FEE_RATE = 500;
     uint256 public tokenAAmount;
     uint256 public tokenBAmount;
@@ -62,8 +63,11 @@ contract KmanDEXPool is IKmanDEXPool, ReentrancyGuard {
 
         if (localTotalShares == 0) {
             localTotalShares = INITIAL_SHARES;
-            shares[realSender] = localTotalShares;
-            require(minimumShares <= localTotalShares, MinimumSharesNotMet(minimumShares, localTotalShares));
+            uint256 senderShares = INITIAL_SHARES - MINIMUM_LIQUIDITY;
+            shares[realSender] = senderShares;
+            // Permanently lock MINIMUM_LIQUIDITY to address(0) to prevent first-deposit inflation attacks.
+            shares[address(0)] = MINIMUM_LIQUIDITY;
+            require(minimumShares <= senderShares, MinimumSharesNotMet(minimumShares, senderShares));
         } else {
             uint256 sharesToMint = Math.min(
                 (amountTokenA * localTotalShares) / tokenAAmount, (amountTokenB * localTotalShares) / tokenBAmount

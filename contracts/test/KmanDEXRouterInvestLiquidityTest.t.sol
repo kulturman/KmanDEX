@@ -28,12 +28,21 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     }
 
     function testInvestLiquidityWithEmptyPool() public {
+        uint256 initialShares = kmanDEXPool.INITIAL_SHARES();
+        uint256 minimumLiquidity = kmanDEXPool.MINIMUM_LIQUIDITY();
+        uint256 expectedSenderShares = initialShares - minimumLiquidity;
+
         vm.expectEmit();
         emit IKmanDEXRouter.LiquidityAdded(contractAddress, 10000, 5000);
         router.investLiquidity(address(tokenA), address(tokenB), 10000, 5000, 0);
 
-        assertEq(kmanDEXPool.totalShares(), kmanDEXPool.INITIAL_SHARES(), "Total shares should be 1000");
-        assertEq(kmanDEXPool.shares(contractAddress), kmanDEXPool.INITIAL_SHARES(), "Sender shares should be 1000");
+        assertEq(kmanDEXPool.totalShares(), initialShares, "Total shares should equal INITIAL_SHARES");
+        assertEq(
+            kmanDEXPool.shares(contractAddress),
+            expectedSenderShares,
+            "Sender should get INITIAL_SHARES - MINIMUM_LIQUIDITY"
+        );
+        assertEq(kmanDEXPool.shares(address(0)), minimumLiquidity, "MINIMUM_LIQUIDITY should be locked at address(0)");
 
         assertEq(kmanDEXPool.tokenAAmount(), 10000);
         assertEq(kmanDEXPool.tokenBAmount(), 5000);
@@ -45,14 +54,22 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
     }
 
     function testRevertsWhenMinimumSharesNotMetOnEmptyPool() public {
-        vm.expectRevert(abi.encodeWithSelector(IKmanDEXPool.MinimumSharesNotMet.selector, 2000, 1000));
-        router.investLiquidity(address(tokenA), address(tokenB), 10000, 5000, 2000);
+        uint256 expectedSenderShares = kmanDEXPool.INITIAL_SHARES() - kmanDEXPool.MINIMUM_LIQUIDITY();
+        uint256 askedShares = expectedSenderShares + 1;
+        vm.expectRevert(
+            abi.encodeWithSelector(IKmanDEXPool.MinimumSharesNotMet.selector, askedShares, expectedSenderShares)
+        );
+        router.investLiquidity(address(tokenA), address(tokenB), 10000, 5000, askedShares);
     }
 
     function testRevertsWhenMinimumSharesNotMetOnNonEmptyPool() public {
         router.investLiquidity(address(tokenA), address(tokenB), 10000, 5000, 1);
-        vm.expectRevert(abi.encodeWithSelector(IKmanDEXPool.MinimumSharesNotMet.selector, 2000, 1000));
-        router.investLiquidity(address(tokenA), address(tokenB), 10000, 5000, 2000);
+        //Second deposit at the same ratio mints (amount * totalShares) / reserve shares.
+        // 10_000 * 1e18 / 10_000 = 1e18 shares
+        uint256 expectedShares = 1e18;
+        uint256 askedShares = expectedShares + 1;
+        vm.expectRevert(abi.encodeWithSelector(IKmanDEXPool.MinimumSharesNotMet.selector, askedShares, expectedShares));
+        router.investLiquidity(address(tokenA), address(tokenB), 10000, 5000, askedShares);
     }
 
     function testInvestLiquidityWithNonEmptyPool() public {
@@ -73,10 +90,22 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
         router.investLiquidity(address(tokenA), address(tokenB), 10_000, 5000, 1);
         vm.stopPrank();
 
-        assertEq(kmanDEXPool.shares(firstInvestor), 1_000, "First investor should have 1000 shares");
-        assertEq(kmanDEXPool.shares(secondInvestor), 500, "Second investor should have 500 shares");
+        uint256 initialShares = kmanDEXPool.INITIAL_SHARES();
+        uint256 minimumLiquidity = kmanDEXPool.MINIMUM_LIQUIDITY();
+        // LP1 gets INITIAL_SHARES - MINIMUM_LIQUIDITY at first deposit.
+        // LP2 deposits at half the existing reserves, so receives initialShares / 2.
+        uint256 expectedFirstShares = initialShares - minimumLiquidity;
+        uint256 expectedSecondShares = initialShares / 2;
 
-        assertEq(kmanDEXPool.totalShares(), 1_500, "Total shares should be 1500");
+        assertEq(kmanDEXPool.shares(firstInvestor), expectedFirstShares, "First investor shares mismatch");
+        assertEq(kmanDEXPool.shares(secondInvestor), expectedSecondShares, "Second investor shares mismatch");
+        assertEq(kmanDEXPool.shares(address(0)), minimumLiquidity, "MINIMUM_LIQUIDITY should remain locked");
+
+        assertEq(
+            kmanDEXPool.totalShares(),
+            initialShares + expectedSecondShares,
+            "Total shares should be INITIAL_SHARES + LP2 shares"
+        );
 
         assertEq(tokenA.balanceOf(address(kmanDEXPool)), 30_000, "Contract should have 30000 TokenA");
         assertEq(tokenB.balanceOf(address(kmanDEXPool)), 15_000, "Contract should have 15000 TokenB");
@@ -89,8 +118,14 @@ contract KmanDEXPoolInvestLiquidityTest is Test {
         router.investLiquidity(address(tokenA), address(tokenB), 20_000, 10_000, 1);
         router.investLiquidity(address(tokenA), address(tokenB), 30_000, 15_000, 1);
 
-        assertEq(kmanDEXPool.shares(contractAddress), 2_500, "First investor should have all shares (1000 + 1500)");
-        assertEq(kmanDEXPool.totalShares(), 2_500, "Total shares should be 2500");
+        uint256 initialShares = kmanDEXPool.INITIAL_SHARES();
+        uint256 minimumLiquidity = kmanDEXPool.MINIMUM_LIQUIDITY();
+        // First deposit: INITIAL_SHARES - MINIMUM_LIQUIDITY.
+        // Second deposit (30_000 on top of 20_000): 30_000 * INITIAL_SHARES / 20_000 = 1.5e18.
+        uint256 expectedShares = (initialShares - minimumLiquidity) + (initialShares * 3) / 2;
+
+        assertEq(kmanDEXPool.shares(contractAddress), expectedShares, "First investor should accumulate both deposits");
+        assertEq(kmanDEXPool.totalShares(), expectedShares + minimumLiquidity, "Total shares mismatch");
 
         assertEq(tokenA.balanceOf(address(kmanDEXPool)), 50_000, "Contract should have 50000 TokenA");
         assertEq(tokenB.balanceOf(address(kmanDEXPool)), 25_000, "Contract should have 25000 TokenB");

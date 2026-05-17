@@ -32,15 +32,21 @@ contract KmanDEXPoolWithdrawLiquidityTest is Test {
     }
 
     function testWithdrawSomeLiquidity() public {
-        //We invest liquidity first and gets 1000 shares, the we withdraw 500 shares which is half of the shares
+        //LP1 receives INITIAL_SHARES - MINIMUM_LIQUIDITY at first deposit; we burn half of INITIAL_SHARES,
+        // which corresponds to half of the reserves.
         router.investLiquidity(address(tokenA), address(tokenB), 10000, 5000, 1);
 
-        vm.expectEmit();
-        emit IKmanDEXPool.LiquidityRemoved(contractAddress, 500, 5000, 2500);
-        router.withdrawLiquidity(address(tokenA), address(tokenB), 500);
+        uint256 initialShares = kmanDEXPool.INITIAL_SHARES();
+        uint256 minimumLiquidity = kmanDEXPool.MINIMUM_LIQUIDITY();
+        uint256 sharesToBurn = initialShares / 2;
+        uint256 expectedRemainingLPShares = (initialShares - minimumLiquidity) - sharesToBurn;
 
-        assertEq(kmanDEXPool.shares(contractAddress), 500, "Shares should be 500");
-        assertEq(kmanDEXPool.totalShares(), 500, "Total shares should be 500");
+        vm.expectEmit();
+        emit IKmanDEXPool.LiquidityRemoved(contractAddress, sharesToBurn, 5000, 2500);
+        router.withdrawLiquidity(address(tokenA), address(tokenB), sharesToBurn);
+
+        assertEq(kmanDEXPool.shares(contractAddress), expectedRemainingLPShares, "LP shares mismatch");
+        assertEq(kmanDEXPool.totalShares(), expectedRemainingLPShares + minimumLiquidity, "Total shares mismatch");
 
         assertEq(kmanDEXPool.tokenAAmount(), 5000, "TokenA amount should be 5000");
         assertEq(kmanDEXPool.tokenBAmount(), 2500, "TokenB amount should be 2500");
@@ -54,9 +60,11 @@ contract KmanDEXPoolWithdrawLiquidityTest is Test {
     function testWithdrawAllLiquidity() public {
         router.investLiquidity(address(tokenA), address(tokenB), 10000, 5000, 1);
 
-        router.withdrawLiquidity(address(tokenA), address(tokenB), 1000);
+        uint256 sharesToBurn = kmanDEXPool.shares(contractAddress);
+        router.withdrawLiquidity(address(tokenA), address(tokenB), sharesToBurn);
 
-        assertEq(kmanDEXPool.shares(contractAddress), 0, "Shares should now be 0");
-        assertEq(kmanDEXPool.invariant(), 0, "Invariant should be 0");
+        assertEq(kmanDEXPool.shares(contractAddress), 0, "LP shares should now be 0");
+        // MINIMUM_LIQUIDITY remains permanently locked, so totalShares does NOT go to zero.
+        assertEq(kmanDEXPool.totalShares(), kmanDEXPool.MINIMUM_LIQUIDITY(), "Locked MINIMUM_LIQUIDITY remains");
     }
 }
